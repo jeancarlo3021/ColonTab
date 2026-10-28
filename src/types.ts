@@ -99,6 +99,12 @@ export interface Visit {
   created_at: string
 }
 
+/** Código secreto de una mesa (va en el QR / NFC) */
+export interface TableToken {
+  number: number
+  token: string
+}
+
 export type MemberRole = 'owner' | 'staff'
 
 export interface Member {

@@ -6,7 +6,8 @@ import { tableLink } from '../../lib/links'
 
 type Status = { kind: 'idle' } | { kind: 'waiting' } | { kind: 'done'; table: number } | { kind: 'error'; text: string }
 
-export function NfcWriter({ restaurant, startTable, onClose }: { restaurant: Restaurant; startTable: number; onClose: () => void }) {
+export function NfcWriter(props: { restaurant: Restaurant; tokens: Map<number, string>; startTable: number; onClose: () => void }) {
+  const { restaurant, tokens, startTable, onClose } = props
   const [table, setTable] = useState(startTable)
   const [lock, setLock] = useState(false)
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
@@ -14,7 +15,8 @@ export function NfcWriter({ restaurant, startTable, onClose }: { restaurant: Res
   const [copied, setCopied] = useState(false)
   const abort = useRef<AbortController | null>(null)
   const supported = nfcSupported()
-  const url = tableLink(restaurant.slug, table, 'nfc')
+  const token = tokens.get(table)
+  const url = token ? tableLink(token, 'nfc') : ''
 
   useEffect(() => () => abort.current?.abort(), [])
 
@@ -58,7 +60,9 @@ export function NfcWriter({ restaurant, startTable, onClose }: { restaurant: Res
         </div>
         <code className="nfc-url">{url}</code>
 
-        {supported ? (
+        {!token ? (
+          <p className="error">Esta mesa todavía no tiene código. Revisa la migración 007 en Supabase.</p>
+        ) : supported ? (
           <>
             {status.kind === 'waiting' && (
               <div className="nfc-status waiting">
@@ -107,6 +111,7 @@ export function NfcWriter({ restaurant, startTable, onClose }: { restaurant: Res
 
         <button
           className="btn btn-ghost"
+          disabled={!token}
           onClick={() =>
             void navigator.clipboard?.writeText(url).then(() => {
               setCopied(true)

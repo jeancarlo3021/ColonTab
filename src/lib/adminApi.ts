@@ -1,9 +1,9 @@
 // Funciones de los paneles de administración (restaurante y plataforma).
 import { supabase } from './supabase'
-import { DEMO_EVENT, emptyRestaurant, readDB, uid, wait, writeDB } from './demoStore'
+import { DEMO_EVENT, demoTables, emptyRestaurant, newToken, readDB, uid, wait, writeDB } from './demoStore'
 import type {
   Member, MemberRole, MenuCategory, MenuItem, Restaurant, RestaurantSummary,
-  ServiceRequest, Suggestion, Visit,
+  ServiceRequest, Suggestion, TableToken, Visit,
 } from '../types'
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
@@ -284,4 +284,31 @@ export async function uploadMenuPdf(restaurantId: string, file: File): Promise<s
   const url = supabase.storage.from('menus').getPublicUrl(path).data.publicUrl
   await updateRestaurant(restaurantId, { menu_type: 'pdf', menu_url: url })
   return url
+}
+
+// ───────── Códigos de mesa (QR / NFC) ─────────
+export async function listTableTokens(restaurantId: string): Promise<TableToken[]> {
+  if (!supabase) {
+    return demoTables()
+      .tables!.filter((t) => t.restaurant_id === restaurantId)
+      .map(({ number, token }) => ({ number, token }))
+      .sort((a, b) => a.number - b.number)
+  }
+  return check(
+    await supabase.from('restaurant_tables').select('number, token').eq('restaurant_id', restaurantId).order('number'),
+  ) as TableToken[]
+}
+
+/** Cambia el código de una mesa (o de todas si number es null). Los QR/NFC viejos dejan de funcionar. */
+export async function regenerateTableTokens(restaurantId: string, number: number | null): Promise<void> {
+  if (!supabase) {
+    demoTables()
+    return writeDB((db) => {
+      for (const t of db.tables ?? []) {
+        if (t.restaurant_id === restaurantId && (number === null || t.number === number)) t.token = newToken()
+      }
+    })
+  }
+  const { error } = await supabase.rpc('regenerate_table_tokens', { p_restaurant_id: restaurantId, p_number: number })
+  if (error) throw new Error(error.message)
 }

@@ -241,3 +241,10 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
   .nfc-welcome-icon .ring { animation: none; opacity: 0; }
   .nfc-welcome-card { animation: none; }
 }
+
+/* Vista previa de una mesa (dueño) */
+.preview-banner {
+  margin: -8px 0 16px; padding: 10px 14px; border-radius: 12px;
+  background: var(--navy); color: #c4ccd6; font-size: 0.85rem; line-height: 1.4;
+}
+.preview-banner strong { color: var(--green); }

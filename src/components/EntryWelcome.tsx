@@ -9,7 +9,7 @@ import type { VisitSource } from '../types'
  * si llegó por NFC, muestra la bienvenida "¡Listo! Estás en la Mesa X".
  */
 export function EntryWelcome() {
-  const { restaurant, table } = useSession()
+  const { restaurant, table, token } = useSession()
   const [params, setParams] = useSearchParams()
   const [show, setShow] = useState(false)
   const done = useRef(false)
@@ -29,7 +29,7 @@ export function EntryWelcome() {
     } catch {
       /* sin almacenamiento */
     }
-    if (!already || v) void recordVisit({ restaurantId: restaurant.id, table, source }).catch(() => undefined)
+    if (token && (!already || v)) void recordVisit({ token, source }).catch(() => undefined)
 
     if (source === 'nfc') {
       setShow(true)
@@ -41,7 +41,7 @@ export function EntryWelcome() {
       next.delete('v')
       setParams(next, { replace: true })
     }
-  }, [params, setParams, restaurant.id, restaurant.slug, table])
+  }, [params, setParams, restaurant.slug, table, token])
 
   useEffect(() => {
     if (!show) return

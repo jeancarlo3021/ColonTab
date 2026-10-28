@@ -25,6 +25,13 @@ const app = (
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
+          {/* Lo que abre el QR / NFC: código secreto de la mesa */}
+          <Route path="/t/:token" element={<RestaurantLayout />}>
+            <Route index element={<Home />} />
+            <Route path="menu" element={<Menu />} />
+            <Route path="juegos" element={<Games />} />
+          </Route>
+          {/* Vista previa para el dueño (no envía avisos) */}
           <Route path="/r/:slug/:mesa" element={<RestaurantLayout />}>
             <Route index element={<Home />} />
             <Route path="menu" element={<Menu />} />

@@ -10,17 +10,17 @@ export function publicOrigin(): string {
   return window.location.hostname.endsWith('colontab.com') ? SITE_URL : window.location.origin
 }
 
-/** Ruta corta: /m/la-esquina-4 */
-export function shortPath(slug: string, table: number) {
-  return `/m/${slug}-${table}`
+/** Enlace de una mesa con su código secreto. `via` marca de dónde viene la visita (nfc o qr). */
+export function tableLink(token: string, via?: Exclude<VisitSource, 'link'>) {
+  return `${publicOrigin()}/t/${token}${via ? `?v=${via}` : ''}`
 }
 
-/** Enlace de una mesa. `via` marca de dónde viene la visita (nfc o qr). */
-export function tableLink(slug: string, table: number, via?: Exclude<VisitSource, 'link'>) {
-  return `${publicOrigin()}${shortPath(slug, table)}${via ? `?v=${via}` : ''}`
+/** Vista previa de una mesa (no envía avisos). */
+export function previewPath(slug: string, table: number) {
+  return `/r/${slug}/${table}`
 }
 
-/** Lee "la-esquina-4" → { slug: 'la-esquina', table: 4 } */
+/** Enlaces viejos: lee "la-esquina-4" → { slug: 'la-esquina', table: 4 } */
 export function parseShortCode(code: string): { slug: string; table: number } | null {
   const m = /^([a-z0-9-]+)-(\d{1,3})$/.exec(code.toLowerCase())
   return m ? { slug: m[1], table: Number(m[2]) } : null

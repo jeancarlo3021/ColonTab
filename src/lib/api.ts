@@ -1,6 +1,6 @@
 // Funciones que usa la app del cliente (la que abre el QR).
 import { supabase } from './supabase'
-import { readDB, uid, wait, writeDB } from './demoStore'
+import { demoTables, readDB, uid, wait, writeDB } from './demoStore'
 import type { MenuCategory, MenuItem, PaymentMethod, Restaurant, ServiceType, VisitSource } from '../types'
 
 export async function getRestaurant(slug: string): Promise<Restaurant | null> {
@@ -40,20 +40,59 @@ export async function getMenu(
   }
 }
 
+/** Mensaje cuando se abre una mesa sin código (vista previa del restaurante). */
+export const PREVIEW_MESSAGE = 'Esto es una vista previa. Escanea el QR o la etiqueta NFC de tu mesa para avisar al personal.'
+
+/**
+ * Busca la mesa de un código de QR/NFC. El código es secreto y aleatorio: cambiar la dirección
+ * no permite pasar a otra mesa. La base de datos vuelve a validarlo en cada aviso.
+ */
+export async function resolveTable(token: string): Promise<{ restaurant: Restaurant; table: number } | null> {
+  if (!/^[A-Za-z0-9]{4,32}$/.test(token)) return null
+  if (!supabase) {
+    const db = demoTables()
+    const t = db.tables!.find((x) => x.token === token)
+    const restaurant = t && db.restaurants.find((r) => r.id === t.restaurant_id)
+    if (!t || !restaurant || !restaurant.active || t.number > restaurant.table_count) return null
+    return { restaurant, table: t.number }
+  }
+  const { data, error } = await supabase.rpc('resolve_table', { p_token: token })
+  if (error) throw error
+  const row = (data as { slug: string; table_number: number }[] | null)?.[0]
+  if (!row) return null
+  const restaurant = await getRestaurant(row.slug)
+  return restaurant ? { restaurant, table: row.table_number } : null
+}
+
+/** Mesa de un código en modo demo (o null). */
+function demoTable(token: string | null) {
+  if (!token) throw new Error(PREVIEW_MESSAGE)
+  const db = demoTables()
+  const t = db.tables!.find((x) => x.token === token)
+  const r = t && db.restaurants.find((x) => x.id === t.restaurant_id)
+  if (!t || !r || !r.active || t.number > r.table_count) throw new Error('Mesa no válida. Escanea el código de tu mesa.')
+  return { restaurantId: r.id, table: t.number }
+}
+
 export async function requestService(params: {
-  restaurantId: string
-  table: number
+  token: string | null
   type: ServiceType
   guests?: number | null
   paymentMethod?: PaymentMethod
 }): Promise<void> {
   if (!supabase) {
     await wait()
+    const { restaurantId, table } = demoTable(params.token)
     return writeDB((db) => {
+      const dup = db.serviceRequests.some(
+        (s) => s.restaurant_id === restaurantId && s.table_number === table && s.type === params.type &&
+          s.status === 'pendiente' && Date.now() - new Date(s.created_at).getTime() < 20_000,
+      )
+      if (dup) return
       db.serviceRequests.push({
         id: uid(),
-        restaurant_id: params.restaurantId,
-        table_number: params.table,
+        restaurant_id: restaurantId,
+        table_number: table,
         type: params.type,
         guests: params.guests ?? null,
         payment_method: params.paymentMethod ?? null,
@@ -62,59 +101,44 @@ export async function requestService(params: {
       })
     })
   }
-  const { error } = await supabase.from('service_requests').insert({
-    restaurant_id: params.restaurantId,
-    table_number: params.table,
-    type: params.type,
-    guests: params.guests ?? null,
-    payment_method: params.paymentMethod ?? null,
+  if (!params.token) throw new Error(PREVIEW_MESSAGE)
+  const { error } = await supabase.rpc('request_service', {
+    p_token: params.token,
+    p_type: params.type,
+    p_payment_method: params.paymentMethod ?? null,
+    p_guests: params.guests ?? null,
   })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
-export async function sendSuggestion(params: {
-  restaurantId: string
-  table: number
-  rating: number | null
-  message: string
-}): Promise<void> {
+export async function sendSuggestion(params: { token: string | null; rating: number | null; message: string }): Promise<void> {
   if (!supabase) {
     await wait()
+    const { restaurantId, table } = demoTable(params.token)
     return writeDB((db) => {
       db.suggestions.push({
         id: uid(),
-        restaurant_id: params.restaurantId,
-        table_number: params.table,
+        restaurant_id: restaurantId,
+        table_number: table,
         rating: params.rating,
         message: params.message,
         created_at: new Date().toISOString(),
       })
     })
   }
-  const { error } = await supabase.from('suggestions').insert({
-    restaurant_id: params.restaurantId,
-    table_number: params.table,
-    rating: params.rating,
-    message: params.message,
-  })
-  if (error) throw error
+  if (!params.token) throw new Error(PREVIEW_MESSAGE)
+  const { error } = await supabase.rpc('send_suggestion', { p_token: params.token, p_rating: params.rating, p_message: params.message })
+  if (error) throw new Error(error.message)
 }
 
 /** Registra que alguien abrió la mesa (por NFC, QR o enlace). Si falla no molesta al cliente. */
-export async function recordVisit(params: { restaurantId: string; table: number; source: VisitSource }): Promise<void> {
+export async function recordVisit(params: { token: string; source: VisitSource }): Promise<void> {
   if (!supabase) {
+    const { restaurantId, table } = demoTable(params.token)
     return writeDB((db) => {
       db.visits ??= []
-      db.visits.push({
-        id: uid(),
-        restaurant_id: params.restaurantId,
-        table_number: params.table,
-        source: params.source,
-        created_at: new Date().toISOString(),
-      })
+      db.visits.push({ id: uid(), restaurant_id: restaurantId, table_number: table, source: params.source, created_at: new Date().toISOString() })
     })
   }
-  await supabase
-    .from('table_visits')
-    .insert({ restaurant_id: params.restaurantId, table_number: params.table, source: params.source })
+  await supabase.rpc('record_visit', { p_token: params.token, p_source: params.source })
 }

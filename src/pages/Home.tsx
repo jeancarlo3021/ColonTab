@@ -11,7 +11,7 @@ import type { PaymentMethod, Restaurant } from '../types'
 type Sheet = null | 'waiter' | 'bill' | 'wifi' | 'social' | 'hours' | 'suggest' | 'guests'
 
 export function Home() {
-  const { restaurant, table, guests, setGuests } = useSession()
+  const { restaurant, table, token, guests, setGuests } = useSession()
   const [sheet, setSheet] = useState<Sheet>(null)
   const [toast, setToast] = useState<string | null>(null)
   const close = useCallback(() => setSheet(null), [])
@@ -81,7 +81,7 @@ export function Home() {
           text={`Avisaremos al personal que la mesa ${table} necesita atención.`}
           onClose={close}
           onConfirm={async () => {
-            await requestService({ restaurantId: restaurant.id, table, type: 'waiter' })
+            await requestService({ token, type: 'waiter' })
             setToast('¡Listo! Un mesero viene en camino 🙌')
           }}
         />
@@ -91,7 +91,7 @@ export function Home() {
           restaurant={restaurant}
           onClose={close}
           onConfirm={async (paymentMethod) => {
-            await requestService({ restaurantId: restaurant.id, table, type: 'bill', paymentMethod })
+            await requestService({ token, type: 'bill', paymentMethod })
             setToast('Tu cuenta está en camino 🧾')
           }}
         />
@@ -127,7 +127,7 @@ export function Home() {
         <SuggestSheet
           onClose={close}
           onSend={async (rating, message) => {
-            await sendSuggestion({ restaurantId: restaurant.id, table, rating, message })
+            await sendSuggestion({ token, rating, message })
             setToast('¡Gracias por tu sugerencia! 💛')
           }}
         />

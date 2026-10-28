@@ -11,6 +11,8 @@ export interface DemoDB {
   suggestions: Suggestion[]
   members: Member[]
   visits?: Visit[]
+  /** Códigos secretos de cada mesa (QR/NFC) */
+  tables?: { restaurant_id: string; number: number; token: string }[]
 }
 
 const KEY = 'mesaclick:demo-db:v1'
@@ -129,3 +131,28 @@ export function resetDemo() {
 }
 
 export const wait = (ms = 300) => new Promise<void>((r) => setTimeout(r, ms))
+
+/** Código aleatorio de 12 letras y números, igual que en la base de datos. */
+export function newToken(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+  const bytes = new Uint8Array(12)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('')
+}
+
+/** Asegura que cada mesa de cada restaurante demo tenga su código. La mesa 4 de La Esquina es "demo". */
+export function demoTables(): DemoDB {
+  const db = readDB()
+  const tables = db.tables ?? []
+  const missing: NonNullable<DemoDB['tables']> = []
+  for (const r of db.restaurants) {
+    for (let n = 1; n <= r.table_count; n++) {
+      if (!tables.some((t) => t.restaurant_id === r.id && t.number === n)) {
+        const isDemo = r.slug === 'la-esquina' && n === 4 && !tables.some((t) => t.token === 'demo')
+        missing.push({ restaurant_id: r.id, number: n, token: isDemo ? 'demo' : newToken() })
+      }
+    }
+  }
+  if (!db.tables || missing.length) writeDB((d) => void (d.tables = [...(d.tables ?? []), ...missing]))
+  return readDB()
+}

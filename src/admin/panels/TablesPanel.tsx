@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'qrcode'
-import { listVisits, updateRestaurant } from '../../lib/adminApi'
+import { listTableTokens, listVisits, regenerateTableTokens, updateRestaurant } from '../../lib/adminApi'
 import { tableLink } from '../../lib/links'
 import { errorText, useData } from '../../lib/useData'
 import { Stat } from '../../components/Stat'
@@ -24,6 +24,20 @@ export function TablesPanel({ restaurant, canEdit, onSaved }: { restaurant: Rest
   const [nfcTable, setNfcTable] = useState<number | null>(null)
   const [range, setRange] = useState<0 | 6 | 29>(6) // hoy, 7 días, 30 días
   const visits = useData(() => listVisits(restaurant.id, daysAgo(range)), [restaurant.id, range])
+  const tokens = useData(() => listTableTokens(restaurant.id), [restaurant.id, restaurant.table_count])
+  const tokenOf = useMemo(() => new Map((tokens.data ?? []).map((t) => [t.number, t.token])), [tokens.data])
+
+  async function regenerate(number: number | null) {
+    const what = number === null ? 'TODAS las mesas' : `la Mesa ${number}`
+    if (!confirm(`¿Cambiar el código de ${what}?\n\nLos QR y etiquetas NFC actuales de ${number === null ? 'todas las mesas' : 'esa mesa'} dejarán de funcionar y tendrás que imprimirlos o grabarlos de nuevo.`)) return
+    setError(null)
+    try {
+      await regenerateTableTokens(restaurant.id, number)
+      tokens.reload()
+    } catch (e) {
+      setError(errorText(e))
+    }
+  }
   const tables = Array.from({ length: restaurant.table_count }, (_, i) => i + 1)
 
   const { totals, byTable } = useMemo(() => {
@@ -96,29 +110,55 @@ export function TablesPanel({ restaurant, canEdit, onSaved }: { restaurant: Rest
           )}
         </div>
         <div className="order-actions">
+          {canEdit && <button className="btn btn-ghost small" onClick={() => void regenerate(null)}>Cambiar todos los códigos</button>}
           <button className="btn btn-ghost small" onClick={() => setNfcTable(1)}>📡 Grabar etiquetas NFC</button>
           <button className="btn btn-primary small" onClick={() => window.print()}>🖨️ Imprimir QRs</button>
         </div>
       </div>
       {error && <p className="error">{error}</p>}
+      {tokens.error && (
+        <p className="error no-print">
+          No se pudieron cargar los códigos de las mesas. Ejecuta <code>supabase/migrations/007_codigos_de_mesa.sql</code> en Supabase.
+        </p>
+      )}
+      <p className="muted no-print">
+        🔒 Cada QR y etiqueta lleva un código secreto de su mesa: nadie puede pasar a otra mesa cambiando la dirección.
+      </p>
       <p className="muted no-print">
         Imprime cada código y pégalo en su mesa, o graba una etiqueta NFC. Al escanearlo o acercar el celular, el cliente
         entra directo a esa mesa.
       </p>
       <div className="qr-grid">
         {tables.map((n) => (
-          <QrCard key={n} restaurant={restaurant} table={n} counts={byTable.get(n)} onNfc={() => setNfcTable(n)} />
+          <QrCard
+            key={n}
+            restaurant={restaurant}
+            table={n}
+            token={tokenOf.get(n)}
+            counts={byTable.get(n)}
+            onNfc={() => setNfcTable(n)}
+            onRegenerate={canEdit ? () => void regenerate(n) : undefined}
+          />
         ))}
       </div>
-      {nfcTable !== null && <NfcWriter restaurant={restaurant} startTable={nfcTable} onClose={() => setNfcTable(null)} />}
+      {nfcTable !== null && <NfcWriter restaurant={restaurant} tokens={tokenOf} startTable={nfcTable} onClose={() => setNfcTable(null)} />}
     </div>
   )
 }
 
-function QrCard({ restaurant, table, counts, onNfc }: { restaurant: Restaurant; table: number; counts?: Counts; onNfc: () => void }) {
+function QrCard(props: {
+  restaurant: Restaurant
+  table: number
+  token?: string
+  counts?: Counts
+  onNfc: () => void
+  onRegenerate?: () => void
+}) {
+  const { restaurant, table, token, counts, onNfc, onRegenerate } = props
   const [src, setSrc] = useState<string | null>(null)
-  const qrUrl = tableLink(restaurant.slug, table, 'qr')
+  const qrUrl = token ? tableLink(token, 'qr') : null
   useEffect(() => {
+    if (!qrUrl) return setSrc(null)
     QRCode.toDataURL(qrUrl, { margin: 1, width: 360, color: { dark: '#0f1926', light: '#ffffff' } }).then(setSrc).catch(() => setSrc(null))
   }, [qrUrl])
   return (
@@ -132,9 +172,10 @@ function QrCard({ restaurant, table, counts, onNfc }: { restaurant: Restaurant; 
       </small>
       <div className="qr-links no-print">
         {/* "Abrir" usa el enlace sin marca para no contar como visita por QR */}
-        <a href={tableLink(restaurant.slug, table)} target="_blank" rel="noreferrer">Abrir</a>
+        {token && <a href={tableLink(token)} target="_blank" rel="noreferrer">Abrir</a>}
         {src && <a href={src} download={`${restaurant.slug}-mesa-${table}.png`}>Descargar</a>}
-        <button onClick={onNfc}>NFC</button>
+        <button onClick={onNfc} disabled={!token}>NFC</button>
+        {onRegenerate && <button onClick={onRegenerate} title="Cambiar el código de esta mesa">Nuevo código</button>}
       </div>
     </div>
   )

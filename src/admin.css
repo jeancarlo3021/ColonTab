@@ -243,3 +243,6 @@
 .menu-type:disabled { cursor: default; opacity: 0.7; }
 .menu-source-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 @media (max-width: 640px) { .menu-types { grid-template-columns: 1fr; } }
+.qr-links button:disabled { opacity: 0.4; cursor: default; }
+.qr-links { flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
+.qr-links a, .qr-links button { white-space: nowrap; }

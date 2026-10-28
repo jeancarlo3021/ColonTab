@@ -4,6 +4,8 @@ import type { Restaurant } from './types'
 interface Session {
   restaurant: Restaurant
   table: number
+  /** Código secreto de la mesa (null = vista previa, no puede enviar avisos) */
+  token: string | null
   guests: number | null
   setGuests: (n: number | null) => void
 }
@@ -19,7 +21,7 @@ function readStorage<T>(key: string, fallback: T): T {
   }
 }
 
-export function SessionProvider({ restaurant, table, children }: { restaurant: Restaurant; table: number; children: ReactNode }) {
+export function SessionProvider({ restaurant, table, token, children }: { restaurant: Restaurant; table: number; token: string | null; children: ReactNode }) {
   const key = `mesaclick:${restaurant.slug}:${table}:guests`
   const [guests, setGuests] = useState<number | null>(() => readStorage(key, null))
 
@@ -31,7 +33,7 @@ export function SessionProvider({ restaurant, table, children }: { restaurant: R
     }
   }, [key, guests])
 
-  const value = useMemo<Session>(() => ({ restaurant, table, guests, setGuests }), [restaurant, table, guests])
+  const value = useMemo<Session>(() => ({ restaurant, table, token, guests, setGuests }), [restaurant, table, token, guests])
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }
 
