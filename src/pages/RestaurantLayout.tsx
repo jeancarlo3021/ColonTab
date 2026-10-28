@@ -26,6 +26,7 @@ export function RestaurantLayout() {
   if (error) return <NotFound message={`No pudimos cargar el restaurante: ${error}`} />
   if (restaurant === undefined) return <div className="screen center"><div className="spinner" /></div>
   if (restaurant === null) return <NotFound message="Restaurante no encontrado." />
+  if (!restaurant.active) return <NotFound message="Este restaurante no está disponible por ahora." />
 
   return (
     <SessionProvider restaurant={restaurant} table={table}>

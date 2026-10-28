@@ -12,6 +12,7 @@ export function Landing() {
           desde su celular.
         </p>
         <Link className="btn btn-primary" to="/r/la-esquina/4">Ver demo · Mesa 4</Link>
+        <Link className="btn btn-ghost" to="/admin">Entrar al panel de administración</Link>
         <p className="hint">
           Cada QR apunta a <code>/r/&lt;restaurante&gt;/&lt;mesa&gt;</code>
           {isDemo && <><br />Modo demo: configura Supabase en <code>.env.local</code></>}

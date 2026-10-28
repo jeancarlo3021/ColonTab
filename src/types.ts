@@ -15,6 +15,8 @@ export interface Restaurant {
   address: string | null
   hours: string | null
   currency: string
+  table_count: number
+  active: boolean
 }
 
 export interface MenuCategory {
@@ -40,3 +42,57 @@ export interface CartLine {
 
 export type ServiceType = 'waiter' | 'bill'
 export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia'
+
+export type OrderStatus = 'nuevo' | 'preparando' | 'servido' | 'pagado' | 'cancelado'
+
+export interface OrderItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+}
+
+export interface Order {
+  id: string
+  restaurant_id: string
+  table_number: number
+  guests: number | null
+  notes: string | null
+  total: number
+  status: OrderStatus
+  created_at: string
+  order_items: OrderItem[]
+}
+
+export interface ServiceRequest {
+  id: string
+  restaurant_id: string
+  table_number: number
+  type: ServiceType
+  payment_method: PaymentMethod | null
+  status: 'pendiente' | 'atendido'
+  created_at: string
+}
+
+export interface Suggestion {
+  id: string
+  restaurant_id: string
+  table_number: number | null
+  rating: number | null
+  message: string
+  created_at: string
+}
+
+export type MemberRole = 'owner' | 'staff'
+
+export interface Member {
+  id: string
+  restaurant_id: string
+  email: string
+  role: MemberRole
+}
+
+export interface RestaurantSummary extends Restaurant {
+  owner_email: string | null
+  order_count: number
+}
