@@ -1,8 +1,9 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './index.css'
 import './admin.css'
+import './landing.css'
 import { AuthProvider } from './lib/auth'
 import { Landing } from './pages/Landing'
 import { RestaurantLayout } from './pages/RestaurantLayout'
@@ -16,7 +17,7 @@ import { AdminHome } from './admin/AdminHome'
 import { RestaurantAdmin } from './admin/RestaurantAdmin'
 import { PlatformAdmin } from './admin/PlatformAdmin'
 
-createRoot(document.getElementById('root')!).render(
+const app = (
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
@@ -35,5 +36,13 @@ createRoot(document.getElementById('root')!).render(
         </Routes>
       </AuthProvider>
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
+
+// La portada viene pre-generada en el HTML (SEO): se hidrata. El resto se dibuja desde cero.
+const container = document.getElementById('root')!
+if (window.location.pathname === '/' && container.firstElementChild) hydrateRoot(container, app)
+else {
+  container.innerHTML = ''
+  createRoot(container).render(app)
+}

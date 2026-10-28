@@ -73,7 +73,7 @@ export function Home() {
         <Tile emoji="💡" label="Sugerencias" onClick={() => setSheet('suggest')} wide />
       </div>
 
-      <footer className="powered">Hecho con <strong>ColonTab</strong></footer>
+      <footer className="powered">Hecho con <a href="https://www.colontab.com" target="_blank" rel="noopener"><strong>ColonTab</strong></a></footer>
 
       {sheet === 'waiter' && (
         <ConfirmService

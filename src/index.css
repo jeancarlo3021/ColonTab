@@ -192,8 +192,6 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
 .empty { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 12px 0; }
 .empty-emoji { font-size: 3rem; }
 
-/* ───── Landing ───── */
-.landing { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; max-width: 360px; }
 /* Marca ColonTab: cuadro azul marino con letras verdes, como el ícono de ColonClick */
 .mc-mark {
   display: grid; place-items: center; flex: none;
@@ -202,12 +200,6 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
   font-family: var(--font-title); font-weight: 700; font-size: 15px; letter-spacing: -0.02em;
 }
 .mc-mark.big { width: 96px; height: 96px; font-size: 2.1rem; }
-.landing-screen { background: var(--navy); color: #fff; max-width: none; }
-.landing-screen .muted, .landing-screen .hint { color: #a9b3c1; }
-.landing-screen code { background: rgba(255, 255, 255, 0.1); }
-.landing-screen .mc-mark { background: var(--green); color: var(--navy); }
-.landing-screen .btn-ghost { background: transparent; border-color: rgba(255, 255, 255, 0.25); color: #fff; }
-.landing h1 { font-size: 2.4rem; color: var(--green); }
 
 /* ───── Juegos ───── */
 .game { display: flex; flex-direction: column; align-items: center; gap: 14px; }

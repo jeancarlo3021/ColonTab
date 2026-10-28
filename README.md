@@ -87,6 +87,15 @@ navegador y comprimida para que se escuche fuerte en los parlantes. El volumen y
 20 s se guardan en cada computadora. Los navegadores exigen un clic antes de permitir sonido: el panel muestra
 un aviso para activarlo.
 
+## SEO (Google)
+
+- La portada (`/`) se **pre-genera en la build** (`scripts/prerender.mjs`): el HTML ya trae todo el texto,
+  así Google la lee sin ejecutar JavaScript. Las demás rutas usan `app.html`.
+- Título, descripción, vista previa para compartir (`public/og-image.png`) y datos estructurados
+  (Organization, WebSite, SoftwareApplication, FAQPage) salen de [`src/lib/site.ts`](src/lib/site.ts).
+- `public/robots.txt` y `public/sitemap.xml` (actualiza `lastmod` cuando cambies la portada).
+- Las mesas (`/r/...`) y el panel (`/admin...`) llevan `X-Robots-Tag: noindex` desde `vercel.json`.
+
 ## Desplegar en Vercel
 
 1. Sube el proyecto a GitHub.
