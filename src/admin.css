@@ -4,7 +4,7 @@
 .admin-main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
 .stack-lg { display: flex; flex-direction: column; gap: 16px; }
 .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.section-title { font-size: 1.05rem; font-weight: 700; }
+.section-title { font-size: 1.25rem; font-weight: 700; }
 .small-text { font-size: 0.85rem; }
 .center-text { text-align: center; padding: 24px !important; }
 .hint.left { text-align: left; }
@@ -25,7 +25,7 @@
 .admin-header .icon-btn { background: rgba(255, 255, 255, 0.1); color: #fff; box-shadow: none; }
 .admin-header .btn-ghost { background: transparent; border-color: rgba(255, 255, 255, 0.25); color: #fff; }
 .admin-header-left, .admin-header-right { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.admin-header h1 { font-size: 1.1rem; }
+.admin-header h1 { font-size: 1.6rem; line-height: 1.15; }
 .admin-header small a { text-decoration: underline; }
 .admin-email { font-size: 0.85rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -128,11 +128,14 @@
 .call {
   display: flex; align-items: center; gap: 14px;
   background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px;
-  border-left: 6px solid var(--warn); animation: up .25s ease-out;
+  animation: up .25s ease-out;
 }
-.call-order { border-left-color: var(--green); }
-.call-bill { border-left-color: var(--info); }
-.call-icon { font-size: 2rem; }
+.call-icon {
+  flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 1.7rem;
+  background: color-mix(in srgb, var(--warn) 16%, #fff);
+}
+.call-order .call-icon { background: color-mix(in srgb, var(--green) 18%, #fff); }
+.call-bill .call-icon { background: color-mix(in srgb, var(--info) 15%, #fff); }
 .call-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .call-table { font-size: 1.3rem; font-weight: 800; }
 .call-text { font-weight: 600; }

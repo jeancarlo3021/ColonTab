@@ -30,11 +30,10 @@ export function Landing() {
       </header>
 
       <section className="lp-hero">
-        <p className="lp-eyebrow">Menú digital para restaurantes en Costa Rica</p>
         <h1>Tus clientes piden con un clic desde su mesa</h1>
         <p className="lp-lead">
-          Con <strong>ColonTab</strong> cada mesa tiene un <strong>código QR</strong> y una <strong>etiqueta NFC</strong>.
-          El cliente ve el menú en su celular y avisa al mesero cuando está listo para ordenar o pagar con{' '}
+          <strong>ColonTab</strong> es el menú digital para restaurantes en Costa Rica: cada mesa tiene un{' '}
+          <strong>código QR</strong> y una <strong>etiqueta NFC</strong>. El cliente ve el menú en su celular y avisa al mesero cuando está listo para ordenar o pagar con{' '}
           <strong>SINPE Móvil</strong>. Sin descargar aplicaciones.
         </p>
         <div className="lp-actions">
