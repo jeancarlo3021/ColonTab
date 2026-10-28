@@ -40,10 +40,7 @@ insert into restaurant_tables (restaurant_id, number)
 select r.id, n from restaurants r, generate_series(1, r.table_count) n
 on conflict do nothing;
 
--- Mesa 4 de La Esquina = demo pública de la portada (colontab.com/t/demo)
-update restaurant_tables set token = 'demo'
-where number = 4 and restaurant_id = (select id from restaurants where slug = 'la-esquina')
-  and not exists (select 1 from restaurant_tables where token = 'demo');
+-- (La Mesa 4 de La Esquina usaba el código público "demo"; ver 008_quitar_codigo_demo.sql)
 
 -- ───── Funciones públicas (lo único que puede hacer un cliente) ─────
 create or replace function resolve_table(p_token text)

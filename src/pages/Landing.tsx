@@ -37,7 +37,7 @@ export function Landing() {
           <strong>SINPE Móvil</strong>. Sin descargar aplicaciones.
         </p>
         <div className="lp-actions">
-          <Link className="btn btn-primary" to="/t/demo">Ver demo en vivo</Link>
+          <Link className="btn btn-primary" to="/r/la-esquina/4">Ver demo en vivo</Link>
           <a className="btn btn-ghost" href={CONTACT_URL} target="_blank" rel="noopener">Quiero ColonTab</a>
         </div>
         <ul className="lp-badges" aria-label="Ventajas">
@@ -108,7 +108,7 @@ export function Landing() {
           <p>Prueba la demo o escríbenos para activar ColonTab en tu negocio.</p>
           <div className="lp-actions">
             <a className="btn btn-primary" href={CONTACT_URL} target="_blank" rel="noopener">Quiero ColonTab</a>
-            <Link className="btn btn-ghost" to="/t/demo">Ver demo</Link>
+            <Link className="btn btn-ghost" to="/r/la-esquina/4">Ver demo</Link>
           </div>
         </section>
       </main>

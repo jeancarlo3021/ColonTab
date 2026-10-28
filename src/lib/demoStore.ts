@@ -140,7 +140,7 @@ export function newToken(): string {
   return Array.from(bytes, (b) => chars[b % chars.length]).join('')
 }
 
-/** Asegura que cada mesa de cada restaurante demo tenga su código. La mesa 4 de La Esquina es "demo". */
+/** Asegura que cada mesa de cada restaurante demo tenga su código. */
 export function demoTables(): DemoDB {
   const db = readDB()
   const tables = db.tables ?? []
@@ -148,8 +148,7 @@ export function demoTables(): DemoDB {
   for (const r of db.restaurants) {
     for (let n = 1; n <= r.table_count; n++) {
       if (!tables.some((t) => t.restaurant_id === r.id && t.number === n)) {
-        const isDemo = r.slug === 'la-esquina' && n === 4 && !tables.some((t) => t.token === 'demo')
-        missing.push({ restaurant_id: r.id, number: n, token: isDemo ? 'demo' : newToken() })
+        missing.push({ restaurant_id: r.id, number: n, token: newToken() })
       }
     }
   }

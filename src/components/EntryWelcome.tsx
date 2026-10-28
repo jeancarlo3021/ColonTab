@@ -31,10 +31,8 @@ export function EntryWelcome() {
     }
     if (token && (!already || v)) void recordVisit({ token, source }).catch(() => undefined)
 
-    if (source === 'nfc') {
-      setShow(true)
-      navigator.vibrate?.([40, 60, 40]) // Android; iPhone no permite vibrar desde la web
-    }
+    // (Sin vibración: Chrome y Safari no dejan vibrar a una página que nadie ha tocado todavía)
+    if (source === 'nfc') setShow(true)
     // Quitar ?v= para que recargar no repita la bienvenida ni la visita
     if (v) {
       const next = new URLSearchParams(params)

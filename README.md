@@ -89,15 +89,15 @@ sirven). Al acercar el celular a la etiqueta, el cliente entra directo a su mesa
   `send_suggestion` y `record_visit`, que **validan el código en la base de datos** (no hay inserción directa).
 - `/r/<restaurante>/<mesa>` es solo **vista previa** para el dueño: los botones no envían avisos.
 - En **Mesas y QR** el dueño puede cambiar el código de una mesa o de todas si un QR se filtra.
-- `colontab.com/t/demo` es la Mesa 4 de La Esquina (demo de la portada).
-- Requiere [`supabase/migrations/007_codigos_de_mesa.sql`](supabase/migrations/007_codigos_de_mesa.sql).
+- La demo de la portada es una vista previa (`/r/la-esquina/4`): no envía avisos a ninguna mesa real.
+- Requiere [`007_codigos_de_mesa.sql`](supabase/migrations/007_codigos_de_mesa.sql) y [`008_quitar_codigo_demo.sql`](supabase/migrations/008_quitar_codigo_demo.sql).
 
 ### Enlaces de mesa, bienvenida y visitas
 
 - El **QR abre directo el menú**; la etiqueta NFC abre la pantalla de la mesa con la bienvenida.
 - Cada QR y etiqueta lleva la dirección final, sin redirecciones. `?v=nfc` o `?v=qr` marca por dónde entró
   el cliente. Los enlaces viejos `/m/...` y `/r/...` solo abren la vista previa.
-- Al entrar por NFC aparece "¡Listo! Estás en la Mesa X" (con vibración en Android; iPhone no permite vibrar desde la web).
+- Al entrar por NFC aparece "¡Listo! Estás en la Mesa X". (No vibra: los navegadores no dejan vibrar a una página que aún no se ha tocado.)
 - Las visitas se guardan en `table_visits` y se ven en **Mesas y QR** (hoy, 7 y 30 días, por mesa).
   Requiere [`supabase/migrations/005_visitas.sql`](supabase/migrations/005_visitas.sql).
 
