@@ -208,3 +208,18 @@
   .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 8mm; }
   .qr-card { box-shadow: none; border: 1px dashed #bbb; }
 }
+
+/* ───── NFC ───── */
+.qr-links button { color: inherit; font-weight: 600; font-size: inherit; padding: 0; }
+.nfc-table { display: flex; align-items: center; justify-content: center; gap: 24px; }
+.nfc-table > div { display: flex; flex-direction: column; align-items: center; }
+.nfc-table strong { font-family: var(--font-title); font-size: 2.6rem; line-height: 1; }
+.nfc-url { display: block; text-align: center; word-break: break-all; padding: 8px; border-radius: 10px; }
+.nfc-status { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 16px; border-radius: 14px; font-size: 1rem; }
+.nfc-status > div { font-size: 2.4rem; }
+.nfc-status.waiting { background: var(--brand-soft); }
+.nfc-status.ok { background: var(--navy); color: var(--green); }
+.nfc-pulse { animation: nfc 1.2s ease-in-out infinite; }
+@keyframes nfc { 50% { transform: scale(1.18); opacity: 0.7; } }
+.toggle.wrap { white-space: normal; align-items: flex-start; }
+.nfc-help { margin: 8px 0; padding-left: 20px; line-height: 1.5; }

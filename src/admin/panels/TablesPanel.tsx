@@ -3,6 +3,7 @@ import QRCode from 'qrcode'
 import { updateRestaurant } from '../../lib/adminApi'
 import { errorText } from '../../lib/useData'
 import type { Restaurant } from '../../types'
+import { NfcWriter } from './NfcWriter'
 
 export function tableUrl(slug: string, n: number) {
   return `${window.location.origin}/r/${slug}/${n}`
@@ -12,6 +13,7 @@ export function TablesPanel({ restaurant, canEdit, onSaved }: { restaurant: Rest
   const [count, setCount] = useState(restaurant.table_count)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [nfcTable, setNfcTable] = useState<number | null>(null)
   const tables = Array.from({ length: restaurant.table_count }, (_, i) => i + 1)
 
   async function save() {
@@ -41,18 +43,22 @@ export function TablesPanel({ restaurant, canEdit, onSaved }: { restaurant: Rest
             </button>
           )}
         </div>
-        <button className="btn btn-primary small" onClick={() => window.print()}>🖨️ Imprimir QRs</button>
+        <div className="order-actions">
+          <button className="btn btn-ghost small" onClick={() => setNfcTable(1)}>📡 Grabar etiquetas NFC</button>
+          <button className="btn btn-primary small" onClick={() => window.print()}>🖨️ Imprimir QRs</button>
+        </div>
       </div>
       {error && <p className="error">{error}</p>}
-      <p className="muted no-print">Imprime cada código y pégalo en su mesa. Al escanearlo, el cliente entra directo a esa mesa.</p>
+      <p className="muted no-print">Imprime cada código y pégalo en su mesa, o graba una etiqueta NFC. Al escanearlo o acercar el celular, el cliente entra directo a esa mesa.</p>
       <div className="qr-grid">
-        {tables.map((n) => <QrCard key={n} restaurant={restaurant} table={n} />)}
+        {tables.map((n) => <QrCard key={n} restaurant={restaurant} table={n} onNfc={() => setNfcTable(n)} />)}
       </div>
+      {nfcTable !== null && <NfcWriter restaurant={restaurant} startTable={nfcTable} onClose={() => setNfcTable(null)} />}
     </div>
   )
 }
 
-function QrCard({ restaurant, table }: { restaurant: Restaurant; table: number }) {
+function QrCard({ restaurant, table, onNfc }: { restaurant: Restaurant; table: number; onNfc: () => void }) {
   const [src, setSrc] = useState<string | null>(null)
   const url = tableUrl(restaurant.slug, table)
   useEffect(() => {
@@ -67,6 +73,7 @@ function QrCard({ restaurant, table }: { restaurant: Restaurant; table: number }
       <div className="qr-links no-print">
         <a href={url} target="_blank" rel="noreferrer">Abrir</a>
         {src && <a href={src} download={`${restaurant.slug}-mesa-${table}.png`}>Descargar</a>}
+        <button onClick={onNfc}>NFC</button>
       </div>
     </div>
   )

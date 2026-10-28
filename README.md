@@ -63,6 +63,16 @@ Tablas: `restaurants`, `menu_categories`, `menu_items`, `orders`, `order_items`,
 Los clientes (rol `anon`) solo pueden leer el restaurante y el menú, y crear llamadas y sugerencias.
 Solo el personal del restaurante puede verlas.
 
+## Etiquetas NFC
+
+En **Mesas y QR → Grabar etiquetas NFC** se graba el enlace de cada mesa en una etiqueta NFC (NTAG213/215
+sirven). Al acercar el celular a la etiqueta, el cliente entra directo a su mesa, igual que con el QR.
+
+- Para grabar desde el panel se necesita **Chrome en Android** con NFC encendido y el sitio en HTTPS (Vercel ya lo es).
+- Graba en serie: al terminar una mesa pasa a la siguiente.
+- Opción de **bloquear** la etiqueta para que nadie la cambie (no se puede deshacer).
+- Desde computadora o iPhone: copia el enlace y grábalo con una app como NFC Tools.
+
 ## Sonido de avisos
 
 El panel toca una campana distinta para cada aviso (listo para ordenar, mesero, cuenta), generada en el
