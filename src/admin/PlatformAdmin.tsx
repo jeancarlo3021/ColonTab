@@ -135,26 +135,29 @@ function Row({ r, onToggle, onDelete }: { r: RestaurantSummary; onToggle: () => 
   )
 }
 
+/** Enlace único a partir del nombre: si ya existe, agrega -2, -3… */
+function uniqueSlug(name: string, taken: string[]): string {
+  const base = slugify(name) || 'restaurante'
+  let slug = base
+  for (let i = 2; taken.includes(slug); i++) slug = `${base}-${i}`
+  return slug
+}
+
 function CreateRestaurant(props: { existingSlugs: string[]; onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState('')
-  const [slug, setSlug] = useState('')
-  const [slugTouched, setSlugTouched] = useState(false)
   const [ownerEmail, setOwnerEmail] = useState('')
-  const [color, setColor] = useState(GREEN)
   const [tables, setTables] = useState(10)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const finalSlug = slugTouched ? slugify(slug) : slugify(name)
-  const taken = props.existingSlugs.includes(finalSlug)
+  const slug = uniqueSlug(name, props.existingSlugs)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (!finalSlug || taken) return
     setBusy(true)
     setError(null)
     try {
-      await createRestaurant({ name: name.trim(), slug: finalSlug, ownerEmail, primaryColor: color, tableCount: tables })
+      await createRestaurant({ name: name.trim(), slug, ownerEmail, primaryColor: GREEN, tableCount: tables })
       props.onCreated()
     } catch (err) {
       setError(errorText(err))
@@ -165,36 +168,19 @@ function CreateRestaurant(props: { existingSlugs: string[]; onClose: () => void;
   return (
     <Modal title="Nuevo restaurante" onClose={props.onClose}>
       <form className="form" onSubmit={submit}>
-        <label className="field"><span>Nombre</span>
+        <label className="field"><span>Nombre del restaurante</span>
           <input required autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Tacos El Güero" />
-        </label>
-        <label className="field"><span>Enlace</span>
-          <div className="prefix-input">
-            <span>/r/</span>
-            <input
-              value={slugTouched ? slug : finalSlug}
-              onChange={(e) => {
-                setSlugTouched(true)
-                setSlug(e.target.value)
-              }}
-            />
-          </div>
-          {taken && <small className="error">Ese enlace ya existe</small>}
+          {name.trim() && <small className="muted">Enlace: /r/{slug}</small>}
         </label>
         <label className="field"><span>Email del dueño</span>
-          <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="dueno@restaurante.com" />
+          <input type="email" required value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="dueno@restaurante.com" />
           <small className="muted">Con este email crea su cuenta y entra a su panel.</small>
         </label>
-        <div className="field-row">
-          <label className="field"><span>Color</span>
-            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
-          </label>
-          <label className="field"><span>Mesas</span>
-            <input type="number" min={1} max={500} value={tables} onChange={(e) => setTables(Number(e.target.value))} />
-          </label>
-        </div>
+        <label className="field"><span>Cantidad de mesas</span>
+          <input type="number" required min={1} max={500} value={tables} onChange={(e) => setTables(Number(e.target.value))} />
+        </label>
         {error && <p className="error">{error}</p>}
-        <button className="btn btn-primary" disabled={busy || !finalSlug || taken}>{busy ? 'Creando…' : 'Crear restaurante'}</button>
+        <button className="btn btn-primary" disabled={busy || !name.trim()}>{busy ? 'Creando…' : 'Crear restaurante'}</button>
       </form>
     </Modal>
   )
