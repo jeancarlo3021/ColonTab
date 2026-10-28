@@ -41,6 +41,8 @@ export function emptyRestaurant(partial: Partial<Restaurant> & Pick<Restaurant, 
     currency: 'MXN',
     table_count: 10,
     active: true,
+    menu_type: 'custom',
+    menu_url: null,
     ...partial,
   }
 }

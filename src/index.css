@@ -4,12 +4,12 @@
   --green: #00d492;
   --cream: #f5eae4;
 
-  --bg: #faf6f3;
+  --bg: #f4f6f8;
   --card: #ffffff;
   --text: var(--navy);
   --text-2: #3b4655;
   --muted: #5d6673;
-  --line: #ede4de;
+  --line: #e3e7ec;
   --brand: var(--green);
   --on-brand: var(--navy);
   --brand-dark: color-mix(in srgb, var(--brand) 54%, #000);
@@ -50,8 +50,7 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
   font-family: Georgia, 'Times New Roman', serif; font-weight: 700;
   font-family: var(--font-title);
   color: var(--on-brand);
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--brand) 55%, #fff), var(--brand) 55%, color-mix(in srgb, var(--brand) 80%, #000));
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 35%, transparent), inset 0 -4px 10px rgba(0, 0, 0, 0.12);
+  background: var(--brand);
   object-fit: cover;
 }
 .hero { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }

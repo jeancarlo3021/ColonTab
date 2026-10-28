@@ -2,7 +2,8 @@
 
 Menú digital por QR para restaurantes. El cliente escanea el QR de su mesa y desde su celular puede:
 
-- Ver el menú (solo consulta, sin carrito)
+- Ver el menú (solo consulta, sin carrito): **personalizado**, **PDF** (se dibuja completo con PDF.js en Android y iPhone)
+  o **enlace** a un menú publicado en otro sitio. Se elige en el panel → Menú → Tipo de menú
 - Tocar **"Estoy listo para ordenar"**: el mesero recibe el aviso con sonido y va a tomar la orden
 - Llamar al mesero / pedir la cuenta (con forma de pago)
 - Jugar mientras espera (Gato y Memoria)
@@ -54,7 +55,7 @@ Sin variables de entorno funciona en **modo demo** con datos de ejemplo.
 3. Pon tu email de administrador al final del SQL (línea `platform_admins`) o ejecuta:
    `insert into platform_admins (email) values ('tu@email.com');`
 4. En **Authentication → URL Configuration** pon la URL de tu sitio (por ejemplo la de Vercel) como *Site URL*.
-5. Si ya habías ejecutado una versión anterior del SQL, ejecuta también
+5. Si ya habías ejecutado una versión anterior del SQL, ejecuta también, en orden, los archivos de
    [`supabase/migrations/002_listo_para_ordenar.sql`](supabase/migrations/002_listo_para_ordenar.sql).
 6. Copia `.env.example` a `.env` y pon tu URL y anon key (Project Settings → API).
 
@@ -82,6 +83,7 @@ sirven). Al acercar el celular a la etiqueta, el cliente entra directo a su mesa
 
 ### Enlaces de mesa, bienvenida y visitas
 
+- El **QR abre directo el menú**; la etiqueta NFC abre la pantalla de la mesa con la bienvenida.
 - Cada QR y etiqueta lleva un enlace corto y final: `https://www.colontab.com/m/<restaurante>-<mesa>`
   (sin redirecciones). `?v=nfc` o `?v=qr` marca por dónde entró el cliente; `/r/<restaurante>/<mesa>` sigue funcionando.
 - Al entrar por NFC aparece "¡Listo! Estás en la Mesa X" (con vibración en Android; iPhone no permite vibrar desde la web).

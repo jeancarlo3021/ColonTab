@@ -1,21 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { ClientHeader } from '../components/ClientHeader'
 
 type Game = 'gato' | 'memoria'
 
 export function Games() {
   const [game, setGame] = useState<Game>('gato')
   return (
-    <main className="menu-page">
-      <header className="topbar">
-        <Link to=".." relative="path" className="icon-btn" aria-label="Volver">←</Link>
-        <h1>Juegos</h1>
-      </header>
-      <nav className="tabs">
-        <button className={`tab ${game === 'gato' ? 'active' : ''}`} onClick={() => setGame('gato')}>❌⭕ Gato</button>
-        <button className={`tab ${game === 'memoria' ? 'active' : ''}`} onClick={() => setGame('memoria')}>🧠 Memoria</button>
+    <main className="c-menu">
+      <ClientHeader title="Juegos" />
+      <nav className="c-tabs" aria-label="Juegos">
+        <button className={game === 'gato' ? 'on' : ''} onClick={() => setGame('gato')}>Gato</button>
+        <button className={game === 'memoria' ? 'on' : ''} onClick={() => setGame('memoria')}>Memoria</button>
       </nav>
-      {game === 'gato' ? <TicTacToe /> : <Memory />}
+      <div className="c-games">{game === 'gato' ? <TicTacToe /> : <Memory />}</div>
     </main>
   )
 }

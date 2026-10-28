@@ -253,3 +253,35 @@ export async function listVisits(restaurantId: string, since: Date): Promise<Vis
       .limit(10000),
   ) as Visit[]
 }
+
+// ───────── Menú en PDF o enlace ─────────
+const MAX_PDF_MB = 15
+
+/** Sube el PDF del menú y lo deja como menú del restaurante. Devuelve su dirección pública. */
+export async function uploadMenuPdf(restaurantId: string, file: File): Promise<string> {
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) throw new Error('El archivo debe ser PDF')
+  if (!supabase) {
+    if (file.size > 4 * 1024 * 1024) throw new Error('En modo demo el PDF debe pesar menos de 4 MB')
+    const url = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo'))
+      reader.readAsDataURL(file)
+    })
+    await updateRestaurant(restaurantId, { menu_type: 'pdf', menu_url: url })
+    return url
+  }
+  if (file.size > MAX_PDF_MB * 1024 * 1024) throw new Error(`El PDF debe pesar menos de ${MAX_PDF_MB} MB`)
+  const path = `${restaurantId}/menu-${Date.now()}.pdf`
+  const up = await supabase.storage.from('menus').upload(path, file, { contentType: 'application/pdf', upsert: false })
+  if (up.error) {
+    throw new Error(
+      /bucket/i.test(up.error.message)
+        ? 'Falta crear el espacio para PDFs: ejecuta supabase/migrations/006_menu_pdf_url.sql'
+        : up.error.message,
+    )
+  }
+  const url = supabase.storage.from('menus').getPublicUrl(path).data.publicUrl
+  await updateRestaurant(restaurantId, { menu_type: 'pdf', menu_url: url })
+  return url
+}

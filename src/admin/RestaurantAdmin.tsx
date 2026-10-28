@@ -58,7 +58,7 @@ export function RestaurantAdmin() {
       </nav>
       <main className="admin-main">
         {tab === 'mesas-live' && <CallsPanel restaurant={r} />}
-        {tab === 'menu' && <MenuPanel restaurant={r} />}
+        {tab === 'menu' && <MenuPanel restaurant={r} canEdit={isOwner} onSaved={restaurant.reload} />}
         {tab === 'mesas' && <TablesPanel restaurant={r} canEdit={isOwner} onSaved={restaurant.reload} />}
         {tab === 'sugerencias' && <SuggestionsPanel restaurant={r} />}
         {tab === 'ajustes' && isOwner && <SettingsPanel restaurant={r} onSaved={restaurant.reload} />}

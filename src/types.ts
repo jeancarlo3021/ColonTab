@@ -19,7 +19,12 @@ export interface Restaurant {
   currency: string
   table_count: number
   active: boolean
+  /** custom = menú armado en ColonTab, pdf = archivo PDF, url = menú en otro sitio */
+  menu_type?: MenuType
+  menu_url?: string | null
 }
+
+export type MenuType = 'custom' | 'pdf' | 'url'
 
 export interface MenuCategory {
   id: string

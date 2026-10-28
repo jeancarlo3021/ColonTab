@@ -5,10 +5,11 @@ import { money } from '../../lib/format'
 import { errorText, useData } from '../../lib/useData'
 import { Modal } from '../../components/Modal'
 import type { MenuCategory, MenuItem, Restaurant } from '../../types'
+import { MenuSource } from './MenuSource'
 
 type Draft = Omit<MenuItem, 'id'> & { id?: string }
 
-export function MenuPanel({ restaurant }: { restaurant: Restaurant }) {
+export function MenuPanel({ restaurant, canEdit, onSaved }: { restaurant: Restaurant; canEdit: boolean; onSaved: () => void }) {
   const { data, error, reload } = useData(() => getMenu(restaurant.id, true), [restaurant.id])
   const [draft, setDraft] = useState<Draft | null>(null)
   const [newCat, setNewCat] = useState('')
@@ -32,6 +33,8 @@ export function MenuPanel({ restaurant }: { restaurant: Restaurant }) {
 
   return (
     <div className="stack-lg">
+      <MenuSource restaurant={restaurant} canEdit={canEdit} onSaved={onSaved} />
+      <h2 className="section-title">Menú personalizado</h2>
       <form
         className="inline-form"
         onSubmit={(e) => {

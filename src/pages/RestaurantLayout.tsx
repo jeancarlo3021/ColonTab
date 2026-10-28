@@ -32,7 +32,7 @@ export function RestaurantLayout() {
 
   return (
     <SessionProvider restaurant={restaurant} table={table}>
-      <div className="screen" style={brandVars(restaurant.primary_color)}>
+      <div className="client" style={brandVars(restaurant.primary_color)}>
         <Outlet />
         <EntryWelcome />
       </div>
