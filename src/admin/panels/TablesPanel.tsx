@@ -93,7 +93,8 @@ export function TablesPanel({ restaurant, canEdit, onSaved }: { restaurant: Rest
           </div>
         )}
         <small className="muted">
-          “Enlace directo” son visitas sin marca: QR impresos antes de este cambio o enlaces compartidos.
+          “Enlace directo” son visitas sin marca: enlaces compartidos o etiquetas NFC grabadas sin <b>?v=nfc</b>
+          (usa “Copiar NFC” para grabarlas con NFC Tools).
         </small>
       </section>
 
@@ -175,8 +176,27 @@ function QrCard(props: {
         {token && <a href={tableLink(token)} target="_blank" rel="noreferrer">Abrir</a>}
         {src && <a href={src} download={`${restaurant.slug}-mesa-${table}.png`}>Descargar</a>}
         <button onClick={onNfc} disabled={!token}>NFC</button>
+        {token && <CopyNfc url={tableLink(token, 'nfc')} />}
         {onRegenerate && <button onClick={onRegenerate} title="Cambiar el código de esta mesa">Nuevo código</button>}
       </div>
     </div>
+  )
+}
+
+/** Copia el enlace de la mesa para grabarlo con NFC Tools (lleva ?v=nfc). */
+function CopyNfc({ url }: { url: string }) {
+  const [done, setDone] = useState(false)
+  return (
+    <button
+      title="Copiar el enlace para grabar la etiqueta con NFC Tools"
+      onClick={() =>
+        void navigator.clipboard?.writeText(url).then(() => {
+          setDone(true)
+          setTimeout(() => setDone(false), 1500)
+        })
+      }
+    >
+      {done ? '¡Copiado!' : 'Copiar NFC'}
+    </button>
   )
 }

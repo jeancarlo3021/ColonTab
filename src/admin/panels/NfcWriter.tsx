@@ -58,7 +58,11 @@ export function NfcWriter(props: { restaurant: Restaurant; tokens: Map<number, s
           </div>
           <button className="icon-btn" onClick={() => go(table + 1)} disabled={table >= restaurant.table_count} aria-label="Mesa siguiente">→</button>
         </div>
-        <code className="nfc-url">{url}</code>
+        {url && (
+          <code className="nfc-url">
+            {url.replace(/\?v=nfc$/, '')}<mark>?v=nfc</mark>
+          </code>
+        )}
 
         {!token ? (
           <p className="error">Esta mesa todavía no tiene código. Revisa la migración 007 en Supabase.</p>
@@ -100,12 +104,17 @@ export function NfcWriter(props: { restaurant: Restaurant; tokens: Map<number, s
           </>
         ) : (
           <div className="note">
-            <strong>Este navegador no puede grabar NFC.</strong>
+            <strong>Grábala con la app NFC Tools</strong> (Android o iPhone):
             <ol className="nfc-help">
-              <li>Abre este panel en un <b>teléfono Android</b> con <b>Chrome</b> (enciende el NFC).</li>
-              <li>O copia el enlace y grábalo con una app como <b>NFC Tools</b> (registro tipo URL).</li>
+              <li>Toca <b>Copiar enlace para NFC</b> (abajo) y mándatelo al celular.</li>
+              <li>En NFC Tools: <b>Escribir → Agregar un registro → URL / URI</b>.</li>
+              <li>Pega el enlace <b>completo</b>: tiene que terminar en <b>?v=nfc</b>. Si no lo tiene, la visita se cuenta como “enlace directo”.</li>
+              <li>Toca <b>Escribir</b> y acerca la etiqueta.</li>
             </ol>
-            <small>En iPhone se graba con la app Atajos o NFC Tools. Cualquier celular con NFC puede leer la etiqueta.</small>
+            <small>
+              No copies el enlace de “Abrir” ni de la barra del navegador: esos no llevan <b>?v=nfc</b>. También puedes grabar
+              desde este panel abierto en Chrome de Android.
+            </small>
           </div>
         )}
 
@@ -119,7 +128,7 @@ export function NfcWriter(props: { restaurant: Restaurant; tokens: Map<number, s
             })
           }
         >
-          {copied ? '¡Enlace copiado!' : '📋 Copiar enlace de la mesa'}
+          {copied ? '¡Enlace para NFC copiado!' : '📋 Copiar enlace para NFC'}
         </button>
       </div>
     </Modal>

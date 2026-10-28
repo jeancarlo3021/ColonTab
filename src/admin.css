@@ -246,3 +246,4 @@
 .qr-links button:disabled { opacity: 0.4; cursor: default; }
 .qr-links { flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
 .qr-links a, .qr-links button { white-space: nowrap; }
+.nfc-url mark { background: var(--green); color: var(--navy); border-radius: 4px; padding: 0 3px; font-weight: 700; }
