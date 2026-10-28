@@ -8,11 +8,11 @@
   --card: #ffffff;
   --text: var(--navy);
   --text-2: #3b4655;
-  --muted: #6b7480;
+  --muted: #5d6673;
   --line: #ede4de;
   --brand: var(--green);
   --on-brand: var(--navy);
-  --brand-dark: color-mix(in srgb, var(--brand) 62%, #000);
+  --brand-dark: color-mix(in srgb, var(--brand) 54%, #000);
   --brand-soft: color-mix(in srgb, var(--brand) 14%, #fff);
   --ring: color-mix(in srgb, var(--brand) 78%, #000);
   --warn: #f79009;
@@ -32,7 +32,8 @@ button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; }
 a { color: inherit; text-decoration: none; }
 h1, h2, p { margin: 0; }
-h1, h2 { font-family: var(--font-title); font-weight: 700; letter-spacing: -0.01em; }
+h1, h2, h3 { font-family: var(--font-title); font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+p, li, small, summary { text-wrap: pretty; }
 code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size: 0.85em; }
 
 .screen { min-height: 100dvh; max-width: 480px; margin: 0 auto; padding: 24px 16px 40px; }
