@@ -67,3 +67,19 @@ export const STATE_LABEL: Record<ServiceState, string> = {
   soon: 'Por vencer',
   expired: 'Vencido',
 }
+
+/** Precio unitario según la cantidad: el escalón más alto cuyo mínimo se alcanza. */
+export function tierFor(tiers: { min: number; price: number }[], qty: number) {
+  const sorted = [...tiers].sort((a, b) => a.min - b.min)
+  let pick = sorted[0]
+  for (const t of sorted) if (qty >= t.min) pick = t
+  return pick ?? { min: 1, price: 0 }
+}
+
+/** Precio anual que paga un restaurante: el especial o el de su plan. */
+export function effectivePlanPrice(b: { plan_price: number | null; plan_currency: string; plan?: { price: number; currency: string } | null } | null | undefined) {
+  if (!b) return null
+  if (b.plan_price != null) return { price: b.plan_price, currency: b.plan_currency }
+  if (b.plan) return { price: b.plan.price, currency: b.plan.currency }
+  return null
+}

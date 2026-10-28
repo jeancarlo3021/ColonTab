@@ -124,9 +124,55 @@ export interface RestaurantSummary extends Restaurant {
 
 /** Precio del plan anual (privado: solo el dueño y la plataforma) */
 export interface RestaurantBilling {
+  /** Precio especial; si es null se usa el del plan */
   plan_price: number | null
   plan_currency: string
   note: string | null
+  plan_id?: string | null
+  plan?: Plan | null
+}
+
+/** Plan de suscripción (Básico, Pro…) */
+export interface Plan {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  currency: string
+  months: number
+  active: boolean
+}
+
+/** Precio por cantidad: "desde `min` unidades, `price` cada una" */
+export interface PriceTier {
+  min: number
+  price: number
+}
+
+/** Artículo del catálogo universal (placas, stickers…) con hasta 4 precios */
+export interface Product {
+  id: string
+  name: string
+  description: string | null
+  currency: string
+  tiers: PriceTier[]
+  active: boolean
+}
+
+export interface ProductSale {
+  id: string
+  restaurant_id: string | null
+  customer_name: string | null
+  product_id: string | null
+  product_name: string
+  quantity: number
+  unit_price: number
+  total: number
+  currency: string
+  sold_at: string
+  paid: boolean
+  note: string | null
+  created_at: string
 }
 
 export interface SubscriptionPayment {

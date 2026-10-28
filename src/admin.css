@@ -286,3 +286,25 @@
 .cell-stack { display: flex; flex-direction: column; }
 .billing-filter { max-width: 480px; }
 .view-switch { max-width: 360px; }
+
+/* ───── Artículos, planes y ventas ───── */
+.view-switch { max-width: none; flex-wrap: wrap; }
+.view-switch button { flex: 1 1 auto; white-space: nowrap; }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.product-card h3, .plan-card h3 { font-size: 1.1rem; }
+.product-card.off, .plan-card.off { opacity: 0.6; }
+.product-card > .btn, .plan-card > .btn { align-self: flex-start; }
+.tier-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.tier-table td { padding: 7px 0; border-bottom: 1px solid var(--line); }
+.tier-table tr:last-child td { border-bottom: 0; }
+.tier-table td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.plan-price { display: flex; align-items: baseline; gap: 6px; }
+.plan-price strong { font-family: var(--font-title); font-size: 1.7rem; }
+.tier-editor { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-size: 0.85rem; font-weight: 600; }
+.tier-row { display: grid; grid-template-columns: 72px 90px 70px 1fr; gap: 8px; align-items: center; }
+.tier-row input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+.tier-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.tier-chip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-weight: 600; font-size: 0.85rem; }
+.tier-chip.on { background: var(--navy); color: var(--green); border-color: var(--navy); }
+.cell-stack.right { align-items: flex-end; }

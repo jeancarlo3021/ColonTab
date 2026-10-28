@@ -9,13 +9,16 @@ import { AdminHeader } from './AdminShell'
 import { brandVars, GREEN } from '../lib/color'
 import { Stat } from '../components/Stat'
 import { BillingPanel } from './BillingPanel'
+import { SalesPanel } from './SalesPanel'
+import { ProductsPanel } from './ProductsPanel'
+import { PlansPanel } from './PlansPanel'
 import { serviceStatus, STATE_LABEL } from '../lib/billing'
 import type { RestaurantSummary } from '../types'
 
 export function PlatformAdmin() {
   const { data, error, reload } = useData(listAllRestaurants, [])
   const [creating, setCreating] = useState(false)
-  const [view, setView] = useState<'restaurants' | 'billing'>('restaurants')
+  const [view, setView] = useState<'restaurants' | 'billing' | 'sales' | 'products' | 'plans'>('restaurants')
   const [query, setQuery] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -40,8 +43,11 @@ export function PlatformAdmin() {
         <div className="segmented view-switch">
           <button className={view === 'restaurants' ? 'active' : ''} onClick={() => setView('restaurants')}>🏢 Restaurantes</button>
           <button className={view === 'billing' ? 'active' : ''} onClick={() => setView('billing')}>💳 Cobros</button>
+          <button className={view === 'sales' ? 'active' : ''} onClick={() => setView('sales')}>🧾 Ventas</button>
+          <button className={view === 'products' ? 'active' : ''} onClick={() => setView('products')}>📦 Artículos</button>
+          <button className={view === 'plans' ? 'active' : ''} onClick={() => setView('plans')}>⭐ Planes</button>
         </div>
-        {view === 'billing' ? <BillingPanel /> : <>
+        {view === 'billing' ? <BillingPanel /> : view === 'sales' ? <SalesPanel /> : view === 'products' ? <ProductsPanel /> : view === 'plans' ? <PlansPanel /> : <>
         <div className="stats">
           <Stat label="Restaurantes" value={String(data?.length ?? '—')} />
           <Stat label="Activos" value={String(data?.filter((r) => r.active).length ?? '—')} />

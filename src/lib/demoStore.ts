@@ -1,6 +1,6 @@
 // Base de datos falsa en el navegador (localStorage) para probar la app sin Supabase.
 // Los pedidos que hace un cliente en una pestaña aparecen en el panel abierto en otra.
-import type { Member, MenuCategory, MenuItem, Order, Restaurant, RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, Visit } from '../types'
+import type { Member, MenuCategory, MenuItem, Order, Plan, Product, ProductSale, Restaurant, RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, Visit } from '../types'
 import { addDays, crToday, periodEnd } from './billing'
 
 export interface DemoDB {
@@ -16,6 +16,9 @@ export interface DemoDB {
   tables?: { restaurant_id: string; number: number; token: string }[]
   billing?: (RestaurantBilling & { restaurant_id: string })[]
   payments?: SubscriptionPayment[]
+  plans?: Plan[]
+  products?: Product[]
+  sales?: ProductSale[]
 }
 
 const KEY = 'mesaclick:demo-db:v1'
@@ -97,7 +100,28 @@ function seed(): DemoDB {
     serviceRequests: [],
     suggestions: [],
     members: [{ id: uid(), restaurant_id: r.id, email: 'dueno@laesquina.mx', role: 'owner' }],
-    billing: [{ restaurant_id: r.id, plan_price: 120000, plan_currency: 'CRC', note: null }],
+    billing: [{ restaurant_id: r.id, plan_price: null, plan_currency: 'CRC', note: null, plan_id: 'plan-basico' }],
+    plans: [
+      { id: 'plan-basico', name: 'Básico', description: 'Menú, QR/NFC y avisos al mesero', price: 120000, currency: 'CRC', months: 12, active: true },
+      { id: 'plan-pro', name: 'Pro', description: 'Todo lo del Básico + varias sucursales y soporte prioritario', price: 180000, currency: 'CRC', months: 12, active: true },
+    ],
+    products: [
+      {
+        id: 'prod-placa', name: 'Placa NFC + QR para mesa', description: 'Placa acrílica con etiqueta NFC y código QR', currency: 'CRC', active: true,
+        tiers: [{ min: 1, price: 6000 }, { min: 10, price: 5000 }, { min: 25, price: 4500 }, { min: 50, price: 4000 }],
+      },
+      {
+        id: 'prod-sticker', name: 'Sticker QR', description: 'Sticker resistente al agua', currency: 'CRC', active: true,
+        tiers: [{ min: 1, price: 1500 }, { min: 10, price: 1200 }, { min: 25, price: 1000 }, { min: 50, price: 800 }],
+      },
+    ],
+    sales: [
+      {
+        id: uid(), restaurant_id: r.id, customer_name: null, product_id: 'prod-placa', product_name: 'Placa NFC + QR para mesa',
+        quantity: 10, unit_price: 5000, total: 50000, currency: 'CRC', sold_at: addDays(crToday(), -160), paid: true, note: null,
+        created_at: new Date().toISOString(),
+      },
+    ],
     payments: [demoPayment(r.id, addDays(crToday(), -165))],
   }
 }

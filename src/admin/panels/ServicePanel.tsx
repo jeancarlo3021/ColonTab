@@ -1,5 +1,5 @@
-import { getBilling, listPayments } from '../../lib/adminApi'
-import { daysBetween, daysText, formatDate, serviceStatus, STATE_LABEL } from '../../lib/billing'
+import { getBilling, listPayments, listSales } from '../../lib/adminApi'
+import { daysBetween, daysText, effectivePlanPrice, formatDate, serviceStatus, STATE_LABEL } from '../../lib/billing'
 import { money } from '../../lib/format'
 import { CONTACT_URL } from '../../lib/site'
 import { useData } from '../../lib/useData'
@@ -15,13 +15,14 @@ export function ServicePanel({ restaurant }: { restaurant: Restaurant }) {
   const current = payments.data?.find((p) => p.period_end.slice(0, 10) === s.until)
   const total = current ? daysBetween(current.period_start, current.period_end) + 1 : 365
   const pct = s.daysLeft === null ? 0 : Math.max(0, Math.min(100, (s.daysLeft / total) * 100))
-  const price = billing.data?.plan_price
+  const eff = effectivePlanPrice(billing.data)
+  const purchases = useData(() => listSales(restaurant.id), [restaurant.id])
 
   return (
     <div className="stack-lg">
       <section className={`panel service-card ${s.state}`}>
         <div className="row-between">
-          <h2 className="section-title">Plan anual de ColonTab</h2>
+          <h2 className="section-title">{billing.data?.plan ? `Plan ${billing.data.plan.name}` : 'Plan de ColonTab'}</h2>
           <span className={`tag state-${s.state}`}>{STATE_LABEL[s.state]}</span>
         </div>
         {s.state === 'none' ? (
@@ -40,7 +41,7 @@ export function ServicePanel({ restaurant }: { restaurant: Restaurant }) {
           </>
         )}
         <div className="service-facts">
-          <div><small>Precio del plan</small><b>{price != null ? `${money(price, billing.data!.plan_currency)} / año` : '—'}</b></div>
+          <div><small>Precio del plan</small><b>{eff ? `${money(eff.price, eff.currency)} / ${billing.data?.plan && billing.data.plan.months !== 12 ? `${billing.data.plan.months} meses` : 'año'}` : '—'}</b></div>
           <div><small>Último pago</small><b>{last ? formatDate(last.created_at) : '—'}</b></div>
         </div>
         <a className="btn btn-ghost small" href={CONTACT_URL} target="_blank" rel="noopener">Renovar o consultar mi plan</a>
@@ -62,6 +63,26 @@ export function ServicePanel({ restaurant }: { restaurant: Restaurant }) {
           ))}
         </ul>
       </section>
+
+      {purchases.data && purchases.data.length > 0 && (
+        <section className="panel">
+          <h2 className="section-title">Compras (placas y artículos)</h2>
+          <ul className="payment-list">
+            {purchases.data.map((p) => (
+              <li key={p.id}>
+                <div>
+                  <strong>{p.quantity} × {p.product_name}</strong>
+                  <small className="muted">{formatDate(p.sold_at)} · {money(p.unit_price, p.currency)} c/u</small>
+                </div>
+                <div className="cell-stack right">
+                  <strong>{money(p.total, p.currency)}</strong>
+                  <small className={p.paid ? 'muted' : 'error'}>{p.paid ? 'Pagado' : 'Pendiente de pago'}</small>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

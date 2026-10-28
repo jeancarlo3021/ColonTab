@@ -78,6 +78,19 @@ Solo el personal del restaurante puede verlas.
   que los clientes no pueden leer.
 - Requiere [`supabase/migrations/009_cobro_anual.sql`](supabase/migrations/009_cobro_anual.sql).
 
+## Artículos, ventas de placas y planes
+
+En **tu panel → Plataforma** hay cinco secciones: Restaurantes, Cobros, **Ventas**, **Artículos** y **Planes**.
+
+- **Artículos**: catálogo universal (placas NFC/QR, stickers…). Cada artículo tiene hasta **4 precios por cantidad**
+  (1 unidad, desde 10, desde 25, desde 50 — las cantidades se pueden cambiar).
+- **Ventas**: registra lo que vendes a cada restaurante (o a otro cliente). El precio por unidad se elige solo según la
+  cantidad y se puede cambiar a mano. Totales del mes/año, unidades y **por cobrar** (ventas pendientes).
+  El restaurante ve sus compras en su pestaña **Servicio**.
+- **Planes**: nombre, precio, moneda y meses. Se asignan en **Cobros → Editar**; al registrar un pago se usa el
+  precio del plan (o un precio especial para ese restaurante).
+- Requiere [`supabase/migrations/010_articulos_ventas_planes.sql`](supabase/migrations/010_articulos_ventas_planes.sql).
+
 ## Notificaciones en pantalla
 
 En la pestaña **Llamadas** se activan las notificaciones del sistema: cuando una mesa llama aparece la

@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { deletePayment, listAllRestaurants, listPayments, registerPayment, saveBilling, setPaidUntil } from '../lib/adminApi'
+import { deletePayment, listAllRestaurants, listPayments, listPlans, registerPayment, saveBilling, setPaidUntil } from '../lib/adminApi'
 import {
-  ALERT_DAYS, crToday, daysText, formatDate, nextPeriodStart, periodEnd, serviceStatus, STATE_LABEL, type ServiceState,
+  ALERT_DAYS, crToday, daysText, effectivePlanPrice, formatDate, nextPeriodStart, periodEnd, serviceStatus, STATE_LABEL, type ServiceState,
 } from '../lib/billing'
 import { money } from '../lib/format'
 import { errorText, useData } from '../lib/useData'
@@ -16,7 +16,8 @@ const ORDER: Record<ServiceState, number> = { expired: 0, soon: 1, none: 2, ok: 
 /** Mensaje de aviso para el dueño (correo o WhatsApp). */
 function reminderText(r: RestaurantSummary) {
   const s = serviceStatus(r.paid_until)
-  const price = r.billing?.plan_price != null ? ` (${money(r.billing.plan_price, r.billing.plan_currency)})` : ''
+  const eff = effectivePlanPrice(r.billing)
+  const price = eff ? ` (${money(eff.price, eff.currency)})` : ''
   if (s.state === 'expired') {
     return `Hola, el servicio de ColonTab para ${r.name} venció el ${formatDate(s.until!)} y está suspendido: las mesas no pueden enviar avisos. Para reactivarlo, renueva tu plan anual${price}. ¡Gracias!`
   }
@@ -97,7 +98,17 @@ export function BillingPanel() {
                     <small className="muted">{r.owner_email ?? 'Sin dueño'}</small>
                   </div>
                 </td>
-                <td>{r.billing?.plan_price != null ? money(r.billing.plan_price, r.billing.plan_currency) : <span className="muted">—</span>}</td>
+                <td>
+                  {(() => {
+                    const eff = effectivePlanPrice(r.billing)
+                    return (
+                      <div className="cell-stack">
+                        <span>{r.billing?.plan?.name ?? (eff ? 'Precio especial' : <span className="muted">Sin plan</span>)}</span>
+                        {eff && <small className="muted">{money(eff.price, eff.currency)}{r.billing?.plan_price != null && r.billing?.plan ? ' (especial)' : ''}</small>}
+                      </div>
+                    )
+                  })()}
+                </td>
                 <td>
                   {s.until ? (
                     <div className="cell-stack">
@@ -160,10 +171,11 @@ export function BillingPanel() {
 }
 
 function PaymentModal({ r, onClose, onDone }: { r: RestaurantSummary; onClose: () => void; onDone: () => void }) {
-  const [amount, setAmount] = useState(r.billing?.plan_price ?? 0)
-  const [currency, setCurrency] = useState(r.billing?.plan_currency ?? 'CRC')
+  const eff = effectivePlanPrice(r.billing)
+  const [amount, setAmount] = useState(eff?.price ?? 0)
+  const [currency, setCurrency] = useState(eff?.currency ?? 'CRC')
   const [method, setMethod] = useState(METHODS[0])
-  const [months, setMonths] = useState(12)
+  const [months, setMonths] = useState(r.billing?.plan?.months ?? 12)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -203,7 +215,7 @@ function PaymentModal({ r, onClose, onDone }: { r: RestaurantSummary; onClose: (
           </label>
           <label className="field"><span>Meses de servicio</span>
             <select value={months} onChange={(e) => setMonths(Number(e.target.value))}>
-              {[12, 6, 3, 1, 24].map((m) => <option key={m} value={m}>{m === 12 ? '12 (un año)' : m}</option>)}
+              {[...new Set([months, 12, 6, 3, 1, 24])].map((m) => <option key={m} value={m}>{m === 12 ? '12 (un año)' : m}</option>)}
             </select>
           </label>
         </div>
@@ -222,6 +234,8 @@ function PaymentModal({ r, onClose, onDone }: { r: RestaurantSummary; onClose: (
 }
 
 function EditModal({ r, onClose, onDone }: { r: RestaurantSummary; onClose: () => void; onDone: () => void }) {
+  const plans = useData(listPlans, [])
+  const [planId, setPlanId] = useState<string>(r.billing?.plan_id ?? '')
   const [price, setPrice] = useState<string>(r.billing?.plan_price != null ? String(r.billing.plan_price) : '')
   const [currency, setCurrency] = useState(r.billing?.plan_currency ?? 'CRC')
   const [until, setUntil] = useState(r.paid_until?.slice(0, 10) ?? '')
@@ -234,7 +248,7 @@ function EditModal({ r, onClose, onDone }: { r: RestaurantSummary; onClose: () =
     setBusy(true)
     setError(null)
     try {
-      await saveBilling(r.id, { plan_price: price === '' ? null : Number(price), plan_currency: currency, note: note.trim() || null })
+      await saveBilling(r.id, { plan_id: planId || null, plan_price: price === '' ? null : Number(price), plan_currency: currency, note: note.trim() || null })
       if ((until || null) !== (r.paid_until?.slice(0, 10) ?? null)) await setPaidUntil(r.id, until || null)
       onDone()
     } catch (err) {
@@ -246,9 +260,17 @@ function EditModal({ r, onClose, onDone }: { r: RestaurantSummary; onClose: () =
   return (
     <Modal title={`Plan · ${r.name}`} onClose={onClose}>
       <form className="form" onSubmit={submit}>
+        <label className="field"><span>Plan</span>
+          <select value={planId} onChange={(e) => setPlanId(e.target.value)}>
+            <option value="">Sin plan</option>
+            {plans.data?.filter((p) => p.active || p.id === planId).map((p) => (
+              <option key={p.id} value={p.id}>{p.name} · {money(p.price, p.currency)} / {p.months === 12 ? 'año' : `${p.months} meses`}</option>
+            ))}
+          </select>
+        </label>
         <div className="field-row">
-          <label className="field"><span>Precio anual</span>
-            <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="120000" />
+          <label className="field"><span>Precio especial (opcional)</span>
+            <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={planId ? 'Usa el del plan' : '120000'} />
           </label>
           <label className="field"><span>Moneda</span>
             <select value={currency} onChange={(e) => setCurrency(e.target.value)}>

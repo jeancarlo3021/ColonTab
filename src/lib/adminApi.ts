@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { DEMO_EVENT, demoTables, emptyRestaurant, newToken, readDB, uid, wait, writeDB } from './demoStore'
 import type {
   Member, MemberRole, MenuCategory, MenuItem, Restaurant, RestaurantSummary,
-  RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, TableToken, Visit,
+  Plan, Product, ProductSale, RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, TableToken, Visit,
 } from '../types'
 import { nextPeriodStart, periodEnd } from './billing'
 
@@ -62,7 +62,7 @@ export async function listAllRestaurants(): Promise<RestaurantSummary[]> {
     }))
   }
   const rows = check(
-    await supabase.from('restaurants').select('*, service_requests(count), restaurant_members(email, role), restaurant_billing(plan_price, plan_currency, note)').order('created_at'),
+    await supabase.from('restaurants').select('*, service_requests(count), restaurant_members(email, role), restaurant_billing(plan_price, plan_currency, note, plan_id, plans(id, name, description, price, currency, months, active))').order('created_at'),
   ) as (Restaurant & {
     service_requests: { count: number }[]
     restaurant_members: { email: string; role: MemberRole }[]
@@ -321,24 +321,44 @@ export async function regenerateTableTokens(restaurantId: string, number: number
 }
 
 // ───────── Cobro anual ─────────
-function normBilling(b: RestaurantBilling | null | undefined): RestaurantBilling | null {
-  return b ? { ...b, plan_price: b.plan_price === null ? null : Number(b.plan_price) } : null
+type RawBilling = RestaurantBilling & { plans?: Plan | Plan[] | null }
+
+function normBilling(b: RawBilling | null | undefined): RestaurantBilling | null {
+  if (!b) return null
+  const { plans, ...rest } = b
+  const plan = Array.isArray(plans) ? plans[0] : plans
+  return {
+    ...rest,
+    plan_price: b.plan_price === null || b.plan_price === undefined ? null : Number(b.plan_price),
+    plan: plan ? normPlan(plan) : rest.plan ?? null,
+  }
 }
+
+const normPlan = (p: Plan): Plan => ({ ...p, price: Number(p.price) })
 
 function demoBilling(db: ReturnType<typeof readDB>, restaurantId: string): RestaurantBilling | null {
   const b = db.billing?.find((x) => x.restaurant_id === restaurantId)
-  return b ? { plan_price: b.plan_price, plan_currency: b.plan_currency, note: b.note } : null
+  if (!b) return null
+  const plan = db.plans?.find((p) => p.id === b.plan_id) ?? null
+  return { plan_price: b.plan_price, plan_currency: b.plan_currency, note: b.note, plan_id: b.plan_id ?? null, plan }
 }
 
 export async function getBilling(restaurantId: string): Promise<RestaurantBilling | null> {
   if (!supabase) return demoBilling(readDB(), restaurantId)
   const data = check(
-    await supabase.from('restaurant_billing').select('plan_price, plan_currency, note').eq('restaurant_id', restaurantId).maybeSingle(),
-  ) as RestaurantBilling | null
+    await supabase
+      .from('restaurant_billing')
+      .select('plan_price, plan_currency, note, plan_id, plans(id, name, description, price, currency, months, active)')
+      .eq('restaurant_id', restaurantId)
+      .maybeSingle(),
+  ) as RawBilling | null
   return normBilling(data)
 }
 
-export async function saveBilling(restaurantId: string, billing: RestaurantBilling): Promise<void> {
+export async function saveBilling(
+  restaurantId: string,
+  billing: { plan_price: number | null; plan_currency: string; note: string | null; plan_id: string | null },
+): Promise<void> {
   if (!supabase) {
     return writeDB((db) => {
       db.billing ??= []
@@ -409,4 +429,116 @@ export async function setPaidUntil(restaurantId: string, date: string | null): P
 export async function deletePayment(id: string): Promise<void> {
   if (!supabase) return writeDB((db) => void (db.payments = (db.payments ?? []).filter((p) => p.id !== id)))
   check(await supabase.from('subscription_payments').delete().eq('id', id))
+}
+
+// ───────── Planes ─────────
+export async function listPlans(): Promise<Plan[]> {
+  if (!supabase) return [...(readDB().plans ?? [])].sort((a, b) => a.price - b.price)
+  return (check(await supabase.from('plans').select('*').order('price')) as Plan[]).map(normPlan)
+}
+
+export async function savePlan(plan: Omit<Plan, 'id'> & { id?: string }): Promise<void> {
+  if (!supabase) {
+    return writeDB((db) => {
+      db.plans ??= []
+      const found = plan.id && db.plans.find((p) => p.id === plan.id)
+      if (found) Object.assign(found, plan)
+      else db.plans.push({ ...plan, id: uid() })
+    })
+  }
+  const { id, ...fields } = plan
+  if (id) check(await supabase.from('plans').update(fields).eq('id', id))
+  else check(await supabase.from('plans').insert(fields))
+}
+
+export async function deletePlan(id: string): Promise<void> {
+  if (!supabase) {
+    return writeDB((db) => {
+      db.plans = (db.plans ?? []).filter((p) => p.id !== id)
+      for (const b of db.billing ?? []) if (b.plan_id === id) b.plan_id = null
+    })
+  }
+  check(await supabase.from('plans').delete().eq('id', id))
+}
+
+// ───────── Artículos (catálogo universal) ─────────
+const normProduct = (p: Product): Product => ({
+  ...p,
+  tiers: (p.tiers ?? []).map((t) => ({ min: Number(t.min), price: Number(t.price) })).sort((a, b) => a.min - b.min),
+})
+
+export async function listProducts(): Promise<Product[]> {
+  if (!supabase) return (readDB().products ?? []).map(normProduct)
+  return (check(await supabase.from('products').select('*').order('name')) as Product[]).map(normProduct)
+}
+
+export async function saveProduct(product: Omit<Product, 'id'> & { id?: string }): Promise<void> {
+  const tiers = [...product.tiers].sort((a, b) => a.min - b.min)
+  if (!tiers.length || tiers.length > 4) throw new Error('Pon entre 1 y 4 precios')
+  if (tiers[0].min !== 1) throw new Error('El primer precio debe ser para 1 unidad')
+  if (new Set(tiers.map((t) => t.min)).size !== tiers.length) throw new Error('Cada precio necesita una cantidad distinta')
+  const clean = { ...product, tiers }
+  if (!supabase) {
+    return writeDB((db) => {
+      db.products ??= []
+      const found = clean.id && db.products.find((p) => p.id === clean.id)
+      if (found) Object.assign(found, clean)
+      else db.products.push({ ...clean, id: uid() })
+    })
+  }
+  const { id, ...fields } = clean
+  if (id) check(await supabase.from('products').update(fields).eq('id', id))
+  else check(await supabase.from('products').insert(fields))
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  if (!supabase) {
+    return writeDB((db) => {
+      db.products = (db.products ?? []).filter((p) => p.id !== id)
+      for (const s of db.sales ?? []) if (s.product_id === id) s.product_id = null
+    })
+  }
+  check(await supabase.from('products').delete().eq('id', id))
+}
+
+// ───────── Ventas ─────────
+const normSale = (s: ProductSale): ProductSale => ({ ...s, unit_price: Number(s.unit_price), total: Number(s.total) })
+
+export async function listSales(restaurantId?: string): Promise<ProductSale[]> {
+  if (!supabase) {
+    return (readDB().sales ?? [])
+      .filter((s) => !restaurantId || s.restaurant_id === restaurantId)
+      .sort((a, b) => b.sold_at.localeCompare(a.sold_at) || b.created_at.localeCompare(a.created_at))
+  }
+  let q = supabase.from('product_sales').select('*').order('sold_at', { ascending: false }).order('created_at', { ascending: false }).limit(5000)
+  if (restaurantId) q = q.eq('restaurant_id', restaurantId)
+  return (check(await q) as ProductSale[]).map(normSale)
+}
+
+export type NewSale = Omit<ProductSale, 'id' | 'created_at'>
+
+export async function createSale(sale: NewSale): Promise<void> {
+  if (!sale.restaurant_id && !sale.customer_name?.trim()) throw new Error('Elige un restaurante o escribe el nombre del cliente')
+  if (!supabase) {
+    return writeDB((db) => {
+      db.sales ??= []
+      db.sales.push({ ...sale, id: uid(), created_at: new Date().toISOString() })
+    })
+  }
+  check(await supabase.from('product_sales').insert(sale))
+}
+
+export async function setSalePaid(id: string, paid: boolean): Promise<void> {
+  if (!supabase) {
+    return writeDB((db) => {
+      const s = db.sales?.find((x) => x.id === id)
+      if (s) s.paid = paid
+    })
+  }
+  check(await supabase.from('product_sales').update({ paid }).eq('id', id))
+}
+
+export async function deleteSale(id: string): Promise<void> {
+  if (!supabase) return writeDB((db) => void (db.sales = (db.sales ?? []).filter((s) => s.id !== id)))
+  check(await supabase.from('product_sales').delete().eq('id', id))
 }
