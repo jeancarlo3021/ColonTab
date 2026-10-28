@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { listPendingRequests, resolveRequest, subscribeLive } from '../../lib/adminApi'
 import { loadRepeat, loadVolume, playChime, saveRepeat, saveVolume, soundUnlocked, unlockSound } from '../../lib/sound'
 import { errorText } from '../../lib/useData'
+import {
+  closeNotifications, notifyEnabled, notifyState, requestNotify, setNotifyEnabled, showNotify, type NotifyState,
+} from '../../lib/notify'
 import { Stat } from '../../components/Stat'
 import type { Restaurant, ServiceRequest, ServiceType } from '../../types'
 
@@ -27,6 +30,8 @@ export function CallsPanel({ restaurant }: { restaurant: Restaurant }) {
   const [volume, setVolume] = useState(loadVolume)
   const [repeat, setRepeat] = useState(loadRepeat)
   const [unlocked, setUnlocked] = useState(soundUnlocked)
+  const [notify, setNotify] = useState<NotifyState>(notifyState)
+  const [notifyOn, setNotifyOn] = useState(notifyEnabled)
   const [, tick] = useState(0)
   const known = useRef<Set<string> | null>(null)
   const settings = useRef({ volume, repeat })
@@ -56,7 +61,20 @@ export function CallsPanel({ restaurant }: { restaurant: Restaurant }) {
         const prev = known.current
         const fresh = prev ? list.filter((r) => !prev.has(r.id)) : []
         if (fresh.length) playChime(fresh[fresh.length - 1].type, settings.current.volume)
+        for (const r of fresh) {
+          void showNotify({
+            id: r.id,
+            title: `${LABEL[r.type].icon} Mesa ${r.table_number} · ${LABEL[r.type].text}`,
+            body: [
+              restaurant.name,
+              r.guests ? `${r.guests} ${r.guests === 1 ? 'persona' : 'personas'}` : '',
+              r.payment_method ? PAYMENT_LABEL[r.payment_method] : '',
+            ].filter(Boolean).join(' · '),
+            url: `/admin/r/${restaurant.slug}`,
+          })
+        }
         known.current = new Set(list.map((r) => r.id))
+        void closeNotifications(known.current)
         setRequests(list)
         setError(null)
       } catch (e) {
@@ -71,7 +89,7 @@ export function CallsPanel({ restaurant }: { restaurant: Restaurant }) {
       unsubscribe()
       clearInterval(poll)
     }
-  }, [restaurant.id])
+  }, [restaurant.id, restaurant.name, restaurant.slug])
 
   // Repetir el aviso mientras haya mesas esperando + refrescar "hace X min"
   const pending = requests ?? []
@@ -96,6 +114,7 @@ export function CallsPanel({ restaurant }: { restaurant: Restaurant }) {
   async function resolve(id: string) {
     setRequests((list) => list?.filter((r) => r.id !== id) ?? null)
     known.current?.delete(id)
+    if (known.current) void closeNotifications(known.current)
     try {
       await resolveRequest(id)
     } catch (e) {
@@ -154,6 +173,54 @@ export function CallsPanel({ restaurant }: { restaurant: Restaurant }) {
             <input type="checkbox" checked={repeat} onChange={(e) => setRepeat(e.target.checked)} />
             <span>Repetir cada 20 s mientras haya mesas esperando</span>
           </label>
+        </div>
+        <div className="sound-row notify-row">
+          <div>
+            <span className="sound-title">🪧 Notificaciones en pantalla</span>
+            <p className="muted small-text">
+              Aparecen en la esquina aunque estés en otra aplicación y se quedan hasta que las cierres.
+            </p>
+          </div>
+          {notify === 'unsupported' && <span className="muted small-text">Este navegador no permite notificaciones.</span>}
+          {notify === 'denied' && (
+            <span className="small-text error">
+              Bloqueadas. Haz clic en el candado 🔒 junto a la dirección → Notificaciones → Permitir, y recarga.
+            </span>
+          )}
+          {notify === 'default' && (
+            <button className="btn btn-primary small" onClick={() => void requestNotify().then(setNotify)}>
+              Activar notificaciones
+            </button>
+          )}
+          {notify === 'granted' && (
+            <div className="order-actions">
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={notifyOn}
+                  onChange={(e) => {
+                    setNotifyOn(e.target.checked)
+                    setNotifyEnabled(e.target.checked)
+                  }}
+                />
+                <span>{notifyOn ? 'Activadas' : 'Apagadas'}</span>
+              </label>
+              <button
+                className="btn btn-ghost small"
+                disabled={!notifyOn}
+                onClick={() =>
+                  void showNotify({
+                    id: 'prueba',
+                    title: '🙋 Mesa 4 · Listo para ordenar',
+                    body: `${restaurant.name} · Notificación de prueba`,
+                    url: `/admin/r/${restaurant.slug}`,
+                  })
+                }
+              >
+                Probar
+              </button>
+            </div>
+          )}
         </div>
       </section>
 

@@ -63,6 +63,13 @@ Tablas: `restaurants`, `menu_categories`, `menu_items`, `orders`, `order_items`,
 Los clientes (rol `anon`) solo pueden leer el restaurante y el menú, y crear llamadas y sugerencias.
 Solo el personal del restaurante puede verlas.
 
+## Notificaciones en pantalla
+
+En la pestaña **Llamadas** se activan las notificaciones del sistema: cuando una mesa llama aparece la
+viñeta de Chrome en la esquina, aunque haya otra aplicación al frente, y se queda hasta cerrarla.
+Al tocarla se abre el panel. Se cierran solas cuando alguien marca la llamada como atendida.
+Requiere que el panel siga abierto en alguna pestaña (puede estar minimizado).
+
 ## Etiquetas NFC
 
 En **Mesas y QR → Grabar etiquetas NFC** se graba el enlace de cada mesa en una etiqueta NFC (NTAG213/215
