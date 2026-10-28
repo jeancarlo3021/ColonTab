@@ -1,4 +1,4 @@
-# MesaClick
+# ColonTab
 
 Menú digital por QR para restaurantes. El cliente escanea el QR de su mesa y desde su celular puede:
 
@@ -15,7 +15,7 @@ Stack: **Vite + React + TypeScript**, **Supabase** (base de datos) y **Vercel** 
 
 | URL | Pantalla |
 | --- | --- |
-| `/` | Página de inicio de MesaClick |
+| `/` | Página de inicio de ColonTab |
 | `/r/<slug>/<mesa>` | Bienvenida de la mesa (lo que abre el QR) |
 | `/r/<slug>/<mesa>/menu` | Menú con botón "Estoy listo para ordenar" |
 | `/r/<slug>/<mesa>/juegos` | Juegos |

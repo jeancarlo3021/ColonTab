@@ -63,7 +63,7 @@ function icon(): string | undefined {
     g.font = 'bold 76px Comfortaa, Arial, sans-serif'
     g.textAlign = 'center'
     g.textBaseline = 'middle'
-    g.fillText('MC', 96, 100)
+    g.fillText('CT', 96, 100)
     iconUrl = c.toDataURL('image/png')
     return iconUrl
   } catch {

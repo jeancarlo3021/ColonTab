@@ -1,4 +1,4 @@
-// Service worker de MesaClick: solo maneja los clics en las notificaciones.
+// Service worker de ColonTab: solo maneja los clics en las notificaciones.
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 

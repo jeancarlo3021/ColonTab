@@ -29,7 +29,7 @@ export function AdminHome() {
           <div className="panel empty">
             <div className="empty-emoji">🍽️</div>
             <p>Tu cuenta ({email}) todavía no tiene restaurantes asignados.</p>
-            <p className="muted">Pide al administrador de MesaClick que te agregue con este email.</p>
+            <p className="muted">Pide al administrador de ColonTab que te agregue con este email.</p>
           </div>
         )}
         <div className="restaurant-grid">

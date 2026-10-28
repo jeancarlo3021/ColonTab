@@ -71,7 +71,7 @@ export function RestaurantAdmin() {
 function AdminError({ message }: { message: string }) {
   return (
     <div className="admin">
-      <AdminHeader title="MesaClick" back="/admin" />
+      <AdminHeader title="ColonTab" back="/admin" />
       <main className="admin-main">
         <div className="panel empty"><div className="empty-emoji">🔒</div><p>{message}</p></div>
       </main>

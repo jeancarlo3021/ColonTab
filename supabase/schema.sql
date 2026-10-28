@@ -1,4 +1,4 @@
--- MesaClick — esquema de base de datos para Supabase
+-- ColonTab — esquema de base de datos para Supabase
 -- Ejecuta este archivo completo en: Supabase → SQL Editor → New query → Run
 -- Se puede volver a ejecutar sin perder datos.
 

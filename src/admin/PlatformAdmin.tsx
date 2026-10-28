@@ -32,7 +32,7 @@ export function PlatformAdmin() {
 
   return (
     <div className="admin">
-      <AdminHeader title="Plataforma MesaClick" subtitle="Administración de todos los restaurantes" back="/admin" />
+      <AdminHeader title="Plataforma ColonTab" subtitle="Administración de todos los restaurantes" back="/admin" />
       <main className="admin-main stack-lg">
         <div className="stats">
           <Stat label="Restaurantes" value={String(data?.length ?? '—')} />

@@ -79,7 +79,7 @@ export async function createRestaurant(input: {
   const base = {
     name: input.name,
     slug: input.slug,
-    logo_text: input.name.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'MC',
+    logo_text: input.name.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'CT',
     primary_color: input.primaryColor,
     table_count: input.tableCount,
   }

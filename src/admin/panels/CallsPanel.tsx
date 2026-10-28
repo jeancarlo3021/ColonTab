@@ -105,7 +105,7 @@ export function CallsPanel({ restaurant }: { restaurant: Restaurant }) {
   // Número de mesas esperando en la pestaña del navegador
   useEffect(() => {
     const base = document.title
-    document.title = pending.length ? `(${pending.length}) Mesas esperando · MesaClick` : base
+    document.title = pending.length ? `(${pending.length}) Mesas esperando · ColonTab` : base
     return () => {
       document.title = base
     }

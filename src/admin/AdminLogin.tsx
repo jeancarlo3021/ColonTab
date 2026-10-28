@@ -40,8 +40,8 @@ export function AdminLogin() {
   return (
     <div className="admin-auth">
       <form className="auth-card" onSubmit={submit}>
-        <div className="mc-mark" aria-hidden>MC</div>
-        <h1>MesaClick Admin</h1>
+        <div className="mc-mark" aria-hidden>CT</div>
+        <h1>ColonTab Admin</h1>
         <p className="muted">Panel para restaurantes</p>
 
         {isDemo ? (
@@ -53,7 +53,7 @@ export function AdminLogin() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => void signIn('admin@mesaclick.app', '')}
+              onClick={() => void signIn('admin@colontab.app', '')}
             >
               Entrar en modo demo
             </button>

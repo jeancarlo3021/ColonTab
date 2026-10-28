@@ -5,8 +5,8 @@ export function Landing() {
   return (
     <div className="screen center landing-screen">
       <div className="landing">
-        <div className="mc-mark big" aria-hidden>MC</div>
-        <h1>MesaClick</h1>
+        <div className="mc-mark big" aria-hidden>CT</div>
+        <h1>ColonTab</h1>
         <p className="muted">
           Tus clientes escanean el QR de su mesa, ven el menú y avisan al mesero cuando están listos para ordenar o quieren la cuenta
           desde su celular.

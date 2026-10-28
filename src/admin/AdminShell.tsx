@@ -18,7 +18,7 @@ export function AdminHeader({ title, subtitle, back }: { title: string; subtitle
     <header className="admin-header">
       <div className="admin-header-left">
         {back && <Link to={back} className="icon-btn" aria-label="Volver">←</Link>}
-        <div className="mc-mark" aria-hidden>MC</div>
+        <div className="mc-mark" aria-hidden>CT</div>
         <div>
           <h1>{title}</h1>
           {subtitle && <small className="muted">{subtitle}</small>}
