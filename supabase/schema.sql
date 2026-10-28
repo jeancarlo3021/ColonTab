@@ -11,7 +11,7 @@ create table if not exists restaurants (
   name text not null,
   logo_text text not null default '',
   logo_url text,
-  primary_color text not null default '#e0b13c',
+  primary_color text not null default '#00D492',
   wifi_ssid text,
   wifi_password text,
   whatsapp text,              -- número con código de país, solo dígitos

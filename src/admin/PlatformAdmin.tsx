@@ -6,6 +6,7 @@ import { isDemo } from '../lib/supabase'
 import { errorText, useData } from '../lib/useData'
 import { Modal } from '../components/Modal'
 import { AdminHeader } from './AdminShell'
+import { brandVars, GREEN } from '../lib/color'
 import { Stat } from '../components/Stat'
 import type { RestaurantSummary } from '../types'
 
@@ -108,7 +109,7 @@ function Row({ r, onToggle, onDelete }: { r: RestaurantSummary; onToggle: () => 
     <tr>
       <td>
         <div className="cell-restaurant">
-          <div className="logo" style={{ width: 36, height: 36, fontSize: 14, ['--brand' as string]: r.primary_color }}>{r.logo_text}</div>
+          <div className="logo" style={{ width: 36, height: 36, fontSize: 14, ...brandVars(r.primary_color) }}>{r.logo_text}</div>
           <div>
             <strong>{r.name}</strong>
             <small className="muted">/r/{r.slug}</small>
@@ -139,7 +140,7 @@ function CreateRestaurant(props: { existingSlugs: string[]; onClose: () => void;
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
   const [ownerEmail, setOwnerEmail] = useState('')
-  const [color, setColor] = useState('#e0b13c')
+  const [color, setColor] = useState(GREEN)
   const [tables, setTables] = useState(10)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)

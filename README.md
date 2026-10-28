@@ -49,7 +49,8 @@ Sin variables de entorno funciona en **modo demo** con datos de ejemplo.
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. Abre **SQL Editor** y ejecuta el contenido de [`supabase/schema.sql`](supabase/schema.sql)
-   (crea las tablas, permisos RLS, la función `create_order` y un restaurante de ejemplo `la-esquina`).
+   (crea las tablas, permisos RLS y un restaurante de ejemplo `la-esquina`).
+   Si ya lo habías ejecutado antes, corre también los archivos de [`supabase/migrations/`](supabase/migrations/) en orden.
 3. Pon tu email de administrador al final del SQL (línea `platform_admins`) o ejecuta:
    `insert into platform_admins (email) values ('tu@email.com');`
 4. En **Authentication → URL Configuration** pon la URL de tu sitio (por ejemplo la de Vercel) como *Site URL*.

@@ -40,7 +40,7 @@ export function AdminLogin() {
   return (
     <div className="admin-auth">
       <form className="auth-card" onSubmit={submit}>
-        <div className="logo brand-logo" aria-hidden>MC</div>
+        <div className="mc-mark" aria-hidden>MC</div>
         <h1>MesaClick Admin</h1>
         <p className="muted">Panel para restaurantes</p>
 

@@ -38,7 +38,7 @@ export function RestaurantAdmin() {
   ]
 
   return (
-    <div className="admin" style={{ ['--brand' as string]: r.primary_color }}>
+    <div className="admin">
       <AdminHeader
         title={r.name}
         back="/admin"

@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { listMyRestaurants } from '../lib/adminApi'
 import { useData } from '../lib/useData'
 import { AdminHeader } from './AdminShell'
+import { brandVars } from '../lib/color'
 
 export function AdminHome() {
   const { email, isPlatformAdmin } = useAuth()
@@ -34,7 +35,7 @@ export function AdminHome() {
         <div className="restaurant-grid">
           {data?.map((r) => (
             <Link key={r.id} to={`/admin/r/${r.slug}`} className="restaurant-card">
-              <div className="logo" style={{ width: 52, height: 52, fontSize: 20, ['--brand' as string]: r.primary_color }}>
+              <div className="logo" style={{ width: 52, height: 52, fontSize: 20, ...brandVars(r.primary_color) }}>
                 {r.logo_text}
               </div>
               <div>
