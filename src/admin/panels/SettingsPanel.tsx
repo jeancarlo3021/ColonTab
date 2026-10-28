@@ -24,6 +24,13 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
     ],
   },
   {
+    title: 'Pagos con SINPE Móvil',
+    fields: [
+      { key: 'sinpe_phone', label: 'Número de SINPE Móvil', type: 'tel', placeholder: '8888-8888' },
+      { key: 'sinpe_name', label: 'A nombre de', placeholder: 'Nombre del titular' },
+    ],
+  },
+  {
     title: 'Contacto y redes',
     fields: [
       { key: 'whatsapp', label: 'WhatsApp (con código de país, solo números)', placeholder: '5215512345678' },
@@ -62,6 +69,7 @@ export function SettingsPanel({ restaurant, onSaved }: { restaurant: Restaurant;
     patch.logo_text = form.logo_text.trim()
     patch.currency = (form.currency.trim() || 'MXN').toUpperCase()
     patch.whatsapp = form.whatsapp?.replace(/\D/g, '') || null
+    patch.sinpe_phone = form.sinpe_phone?.replace(/\D/g, '') || null
     try {
       await updateRestaurant(restaurant.id, patch)
       setMsg({ ok: true, text: 'Cambios guardados ✅' })

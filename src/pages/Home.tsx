@@ -6,7 +6,7 @@ import { Logo } from '../components/Logo'
 import { Modal } from '../components/Modal'
 import { Toast } from '../components/Toast'
 import { ReadyToOrder } from '../components/ReadyToOrder'
-import type { PaymentMethod } from '../types'
+import type { PaymentMethod, Restaurant } from '../types'
 
 type Sheet = null | 'waiter' | 'bill' | 'wifi' | 'social' | 'hours' | 'suggest' | 'guests'
 
@@ -88,6 +88,7 @@ export function Home() {
       )}
       {sheet === 'bill' && (
         <BillSheet
+          restaurant={restaurant}
           onClose={close}
           onConfirm={async (paymentMethod) => {
             await requestService({ restaurantId: restaurant.id, table, type: 'bill', paymentMethod })
@@ -190,13 +191,20 @@ function ConfirmService(props: { title: string; text: string; onClose: () => voi
   )
 }
 
-function BillSheet(props: { onClose: () => void; onConfirm: (m: PaymentMethod) => Promise<void> }) {
+/** 88888888 → 8888-8888 */
+function formatPhone(p: string) {
+  const d = p.replace(/\D/g, '')
+  return d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4)}` : d
+}
+
+function BillSheet(props: { restaurant: Restaurant; onClose: () => void; onConfirm: (m: PaymentMethod) => Promise<void> }) {
+  const { sinpe_phone, sinpe_name } = props.restaurant
   const [method, setMethod] = useState<PaymentMethod>('tarjeta')
   const { busy, error, run } = useSubmit(props.onClose)
   const options: { id: PaymentMethod; label: string }[] = [
     { id: 'tarjeta', label: '💳 Tarjeta' },
     { id: 'efectivo', label: '💵 Efectivo' },
-    { id: 'transferencia', label: '📲 Transferencia' },
+    { id: 'transferencia', label: '📲 SINPE Móvil' },
   ]
   return (
     <Modal title="Pedir la cuenta" onClose={props.onClose}>
@@ -208,6 +216,13 @@ function BillSheet(props: { onClose: () => void; onConfirm: (m: PaymentMethod) =
           </button>
         ))}
       </div>
+      {method === 'transferencia' && sinpe_phone && (
+        <div className="sinpe-box">
+          <WifiRow label="SINPE Móvil" value={formatPhone(sinpe_phone)} copyValue={sinpe_phone.replace(/\D/g, '')} />
+          {sinpe_name && <small className="muted">A nombre de <b>{sinpe_name}</b></small>}
+          <small className="muted">Cuando llegue el mesero, muéstrale el comprobante.</small>
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
       <button className="btn btn-primary" disabled={busy} onClick={() => run(() => props.onConfirm(method))}>
         {busy ? 'Enviando…' : 'Pedir la cuenta'}
@@ -216,7 +231,7 @@ function BillSheet(props: { onClose: () => void; onConfirm: (m: PaymentMethod) =
   )
 }
 
-function WifiRow({ label, value }: { label: string; value: string }) {
+function WifiRow({ label, value, copyValue }: { label: string; value: string; copyValue?: string }) {
   const [copied, setCopied] = useState(false)
   return (
     <div className="wifi-row">
@@ -227,7 +242,7 @@ function WifiRow({ label, value }: { label: string; value: string }) {
       <button
         className="btn btn-ghost small"
         onClick={() =>
-          navigator.clipboard?.writeText(value).then(() => {
+          navigator.clipboard?.writeText(copyValue ?? value).then(() => {
             setCopied(true)
             setTimeout(() => setCopied(false), 1500)
           })

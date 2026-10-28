@@ -217,3 +217,5 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
 .memory { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 340px; }
 .mem-card { aspect-ratio: 1; border-radius: 14px; background: var(--navy); color: var(--green); font-size: 1.6rem; font-weight: 800; transition: transform .2s, background .2s; }
 .mem-card.shown { background: var(--card); box-shadow: var(--shadow); transform: rotateY(180deg) scaleX(-1); }
+.sinpe-box { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding: 4px 14px 12px; border-radius: 14px; background: var(--brand-soft); }
+.sinpe-box .wifi-row { border-bottom: 0; }

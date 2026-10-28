@@ -8,6 +8,8 @@ export interface Restaurant {
   wifi_ssid: string | null
   wifi_password: string | null
   whatsapp: string | null
+  sinpe_phone: string | null
+  sinpe_name: string | null
   instagram: string | null
   tiktok: string | null
   google_review_url: string | null
@@ -37,6 +39,7 @@ export interface MenuItem {
 
 /** waiter = llamar al mesero, bill = pedir la cuenta, order = listo para ordenar */
 export type ServiceType = 'waiter' | 'bill' | 'order'
+/** 'transferencia' se muestra como SINPE Móvil */
 export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia'
 
 export type OrderStatus = 'nuevo' | 'preparando' | 'servido' | 'pagado' | 'cancelado'

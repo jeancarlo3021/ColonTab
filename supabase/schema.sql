@@ -15,6 +15,8 @@ create table if not exists restaurants (
   wifi_ssid text,
   wifi_password text,
   whatsapp text,              -- número con código de país, solo dígitos
+  sinpe_phone text,           -- número de SINPE Móvil (8 dígitos)
+  sinpe_name text,            -- a nombre de quién está el SINPE
   instagram text,
   tiktok text,
   google_review_url text,
@@ -28,6 +30,8 @@ create table if not exists restaurants (
 );
 alter table restaurants add column if not exists table_count int not null default 10;
 alter table restaurants add column if not exists active boolean not null default true;
+alter table restaurants add column if not exists sinpe_phone text;
+alter table restaurants add column if not exists sinpe_name text;
 
 -- Administradores de toda la plataforma (tú)
 create table if not exists platform_admins (
@@ -89,7 +93,7 @@ create table if not exists service_requests (
   table_number int not null check (table_number > 0),
   type text not null check (type in ('waiter','bill','order')),  -- order = "Estoy listo para ordenar"
   guests int check (guests between 1 and 100),
-  payment_method text check (payment_method in ('efectivo','tarjeta','transferencia')),
+  payment_method text check (payment_method in ('efectivo','tarjeta','transferencia')),  -- transferencia = SINPE Móvil
   status text not null default 'pendiente' check (status in ('pendiente','atendido')),
   created_at timestamptz not null default now()
 );

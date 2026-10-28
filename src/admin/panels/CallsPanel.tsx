@@ -15,7 +15,7 @@ const LABEL: Record<ServiceType, { icon: string; text: string }> = {
   waiter: { icon: '🛎️', text: 'Llama al mesero' },
   bill: { icon: '🧾', text: 'Pide la cuenta' },
 }
-const PAYMENT_LABEL = { efectivo: '💵 Efectivo', tarjeta: '💳 Tarjeta', transferencia: '📲 Transferencia' }
+const PAYMENT_LABEL = { efectivo: '💵 Efectivo', tarjeta: '💳 Tarjeta', transferencia: '📲 SINPE Móvil' }
 
 function timeAgo(iso: string) {
   const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
