@@ -35,12 +35,8 @@ export interface MenuItem {
   available: boolean
 }
 
-export interface CartLine {
-  item: MenuItem
-  quantity: number
-}
-
-export type ServiceType = 'waiter' | 'bill'
+/** waiter = llamar al mesero, bill = pedir la cuenta, order = listo para ordenar */
+export type ServiceType = 'waiter' | 'bill' | 'order'
 export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia'
 
 export type OrderStatus = 'nuevo' | 'preparando' | 'servido' | 'pagado' | 'cancelado'
@@ -69,6 +65,7 @@ export interface ServiceRequest {
   restaurant_id: string
   table_number: number
   type: ServiceType
+  guests: number | null
   payment_method: PaymentMethod | null
   status: 'pendiente' | 'atendido'
   created_at: string
@@ -94,5 +91,5 @@ export interface Member {
 
 export interface RestaurantSummary extends Restaurant {
   owner_email: string | null
-  order_count: number
+  request_count: number
 }

@@ -2,7 +2,7 @@
 import { supabase } from './supabase'
 import { DEMO_EVENT, emptyRestaurant, readDB, uid, wait, writeDB } from './demoStore'
 import type {
-  Member, MemberRole, MenuCategory, MenuItem, Order, OrderStatus, Restaurant, RestaurantSummary,
+  Member, MemberRole, MenuCategory, MenuItem, Restaurant, RestaurantSummary,
   ServiceRequest, Suggestion,
 } from '../types'
 
@@ -56,16 +56,16 @@ export async function listAllRestaurants(): Promise<RestaurantSummary[]> {
     return db.restaurants.map((r) => ({
       ...r,
       owner_email: db.members.find((m) => m.restaurant_id === r.id && m.role === 'owner')?.email ?? null,
-      order_count: db.orders.filter((o) => o.restaurant_id === r.id).length,
+      request_count: db.serviceRequests.filter((o) => o.restaurant_id === r.id).length,
     }))
   }
   const rows = check(
-    await supabase.from('restaurants').select('*, orders(count), restaurant_members(email, role)').order('created_at'),
-  ) as (Restaurant & { orders: { count: number }[]; restaurant_members: { email: string; role: MemberRole }[] })[]
-  return rows.map(({ orders, restaurant_members, ...r }) => ({
+    await supabase.from('restaurants').select('*, service_requests(count), restaurant_members(email, role)').order('created_at'),
+  ) as (Restaurant & { service_requests: { count: number }[]; restaurant_members: { email: string; role: MemberRole }[] })[]
+  return rows.map(({ service_requests, restaurant_members, ...r }) => ({
     ...r,
     owner_email: restaurant_members.find((m) => m.role === 'owner')?.email ?? null,
-    order_count: orders[0]?.count ?? 0,
+    request_count: service_requests[0]?.count ?? 0,
   }))
 }
 
@@ -157,37 +157,6 @@ export async function deleteItem(id: string): Promise<void> {
 }
 
 // ───────── Pedidos y llamadas ─────────
-export async function listOrders(restaurantId: string, since: Date): Promise<Order[]> {
-  if (!supabase) {
-    return readDB()
-      .orders.filter((o) => o.restaurant_id === restaurantId && new Date(o.created_at) >= since)
-      .sort((a, b) => b.created_at.localeCompare(a.created_at))
-  }
-  const rows = check(
-    await supabase
-      .from('orders')
-      .select('*, order_items(id, name, price, quantity)')
-      .eq('restaurant_id', restaurantId)
-      .gte('created_at', since.toISOString())
-      .order('created_at', { ascending: false }),
-  ) as Order[]
-  return rows.map((o) => ({
-    ...o,
-    total: Number(o.total),
-    order_items: o.order_items.map((i) => ({ ...i, price: Number(i.price) })),
-  }))
-}
-
-export async function setOrderStatus(id: string, status: OrderStatus): Promise<void> {
-  if (!supabase) {
-    return writeDB((db) => {
-      const o = db.orders.find((x) => x.id === id)
-      if (o) o.status = status
-    })
-  }
-  check(await supabase.from('orders').update({ status }).eq('id', id))
-}
-
 export async function listPendingRequests(restaurantId: string): Promise<ServiceRequest[]> {
   if (!supabase) {
     return readDB().serviceRequests.filter((s) => s.restaurant_id === restaurantId && s.status === 'pendiente')
@@ -212,7 +181,7 @@ export async function resolveRequest(id: string): Promise<void> {
   check(await supabase.from('service_requests').update({ status: 'atendido' }).eq('id', id))
 }
 
-/** Avisa cuando llegan o cambian pedidos/llamadas. Devuelve la función para dejar de escuchar. */
+/** Avisa cuando llegan o cambian llamadas de mesas. Devuelve la función para dejar de escuchar. */
 export function subscribeLive(restaurantId: string, onChange: () => void): () => void {
   if (!supabase) {
     const onStorage = (e: StorageEvent) => e.key?.startsWith('mesaclick:demo-db') && onChange()
@@ -227,7 +196,6 @@ export function subscribeLive(restaurantId: string, onChange: () => void): () =>
   const filter = `restaurant_id=eq.${restaurantId}`
   const channel = client
     .channel(`live-${restaurantId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter }, onChange)
     .subscribe()
   return () => void client.removeChannel(channel)

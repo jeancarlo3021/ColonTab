@@ -63,7 +63,7 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
 
 /* ───── Botón principal ───── */
 .cta {
-  position: relative;
+  position: relative; width: 100%;
   display: flex; align-items: center; justify-content: center; gap: 12px;
   background: var(--brand); color: #fff;
   font-weight: 700; font-size: 1.05rem;
@@ -73,13 +73,6 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
   margin-bottom: 14px; transition: transform .1s;
 }
 .cta:active { transform: scale(0.98); }
-.cta-dot { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, #fff, #c9c4ff); }
-.badge {
-  background: #fff; color: var(--brand-dark); border-radius: 999px;
-  min-width: 24px; height: 24px; padding: 0 7px;
-  display: inline-grid; place-items: center; font-size: 0.8rem; font-weight: 800;
-}
-.cta .badge { position: absolute; right: 14px; }
 
 /* ───── Grid de opciones ───── */
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -166,22 +159,20 @@ code { background: var(--line); padding: 1px 6px; border-radius: 6px; font-size:
 .item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .item-info p { font-size: 0.82rem; }
 .price { font-weight: 700; color: var(--brand-dark); }
-.add-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 1.3rem; font-weight: 700; flex: none; }
-.qty { display: flex; align-items: center; gap: 4px; background: var(--brand-soft); border-radius: 999px; padding: 3px; flex: none; }
-.qty button { width: 30px; height: 30px; border-radius: 50%; background: #fff; font-weight: 700; }
-.qty span { min-width: 22px; text-align: center; font-weight: 700; }
-.cart-bar {
+.ready-bar {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px;
   width: calc(100% - 32px); max-width: 448px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--brand); color: #fff; font-weight: 700;
-  padding: 14px 18px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--brand); color: #fff; font-weight: 700; font-size: 1.05rem;
+  padding: 16px 18px; border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(224, 123, 22, 0.35); z-index: 40;
 }
-.cart-lines { list-style: none; margin: 0; padding: 0; }
-.cart-lines li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.cart-lines li > div { display: flex; flex-direction: column; }
-.total-row { display: flex; justify-content: space-between; font-size: 1.1rem; margin-top: 14px; }
+.ready-bar:disabled, .cta:disabled { background: #6fbf8b; outline-color: #4aa26b; box-shadow: none; cursor: default; }
+.menu-link {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--card); box-shadow: var(--shadow); border-radius: var(--radius);
+  padding: 14px; font-weight: 700; margin-bottom: 14px;
+}
 
 /* ───── Estados ───── */
 .spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--brand); animation: spin .8s linear infinite; }

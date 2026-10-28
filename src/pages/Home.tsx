@@ -5,12 +5,13 @@ import { requestService, sendSuggestion } from '../lib/api'
 import { Logo } from '../components/Logo'
 import { Modal } from '../components/Modal'
 import { Toast } from '../components/Toast'
+import { ReadyToOrder } from '../components/ReadyToOrder'
 import type { PaymentMethod } from '../types'
 
 type Sheet = null | 'waiter' | 'bill' | 'wifi' | 'social' | 'hours' | 'suggest' | 'guests'
 
 export function Home() {
-  const { restaurant, table, guests, setGuests, cartCount } = useSession()
+  const { restaurant, table, guests, setGuests } = useSession()
   const [sheet, setSheet] = useState<Sheet>(null)
   const [toast, setToast] = useState<string | null>(null)
   const close = useCallback(() => setSheet(null), [])
@@ -53,11 +54,8 @@ export function Home() {
         </div>
       </section>
 
-      <Link to="menu" className="cta">
-        <span className="cta-dot" />
-        Ver el menú y ordenar
-        {cartCount > 0 && <span className="badge">{cartCount}</span>}
-      </Link>
+      <ReadyToOrder />
+      <Link to="menu" className="menu-link">📖 Ver el menú</Link>
 
       <div className="grid">
         <Tile emoji="🙋" label="Llamar al mesero" onClick={() => setSheet('waiter')} />

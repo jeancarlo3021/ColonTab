@@ -1,7 +1,7 @@
 import { deleteSuggestion, listSuggestions } from '../../lib/adminApi'
 import { useData } from '../../lib/useData'
 import type { Restaurant } from '../../types'
-import { Stat } from './OrdersPanel'
+import { Stat } from '../../components/Stat'
 
 export function SuggestionsPanel({ restaurant }: { restaurant: Restaurant }) {
   const { data, error, reload } = useData(() => listSuggestions(restaurant.id), [restaurant.id])

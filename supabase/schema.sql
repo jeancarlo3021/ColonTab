@@ -87,11 +87,17 @@ create table if not exists service_requests (
   id uuid primary key default gen_random_uuid(),
   restaurant_id uuid not null references restaurants(id) on delete cascade,
   table_number int not null check (table_number > 0),
-  type text not null check (type in ('waiter','bill')),
+  type text not null check (type in ('waiter','bill','order')),  -- order = "Estoy listo para ordenar"
+  guests int check (guests between 1 and 100),
   payment_method text check (payment_method in ('efectivo','tarjeta','transferencia')),
   status text not null default 'pendiente' check (status in ('pendiente','atendido')),
   created_at timestamptz not null default now()
 );
+
+-- Para bases creadas con una versión anterior
+alter table service_requests drop constraint if exists service_requests_type_check;
+alter table service_requests add constraint service_requests_type_check check (type in ('waiter','bill','order'));
+alter table service_requests add column if not exists guests int check (guests between 1 and 100);
 
 create table if not exists suggestions (
   id uuid primary key default gen_random_uuid(),

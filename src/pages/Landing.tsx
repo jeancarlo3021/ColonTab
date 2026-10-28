@@ -8,7 +8,7 @@ export function Landing() {
         <div className="logo brand-logo" aria-hidden>MC</div>
         <h1>MesaClick</h1>
         <p className="muted">
-          Tus clientes escanean el QR de su mesa y pueden ver el menú, ordenar, llamar al mesero y pedir la cuenta
+          Tus clientes escanean el QR de su mesa, ven el menú y avisan al mesero cuando están listos para ordenar o quieren la cuenta
           desde su celular.
         </p>
         <Link className="btn btn-primary" to="/r/la-esquina/4">Ver demo · Mesa 4</Link>

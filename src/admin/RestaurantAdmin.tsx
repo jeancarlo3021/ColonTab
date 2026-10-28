@@ -4,19 +4,19 @@ import { useAuth } from '../lib/auth'
 import { getRestaurantAdmin, listMembers } from '../lib/adminApi'
 import { useData } from '../lib/useData'
 import { AdminHeader } from './AdminShell'
-import { OrdersPanel } from './panels/OrdersPanel'
+import { CallsPanel } from './panels/CallsPanel'
 import { MenuPanel } from './panels/MenuPanel'
 import { TablesPanel } from './panels/TablesPanel'
 import { SettingsPanel } from './panels/SettingsPanel'
 import { SuggestionsPanel } from './panels/SuggestionsPanel'
 import { TeamPanel } from './panels/TeamPanel'
 
-type Tab = 'pedidos' | 'menu' | 'mesas' | 'sugerencias' | 'ajustes' | 'equipo'
+type Tab = 'mesas-live' | 'menu' | 'mesas' | 'sugerencias' | 'ajustes' | 'equipo'
 
 export function RestaurantAdmin() {
   const { slug = '' } = useParams()
   const { email, isPlatformAdmin } = useAuth()
-  const [tab, setTab] = useState<Tab>('pedidos')
+  const [tab, setTab] = useState<Tab>('mesas-live')
   const restaurant = useData(() => getRestaurantAdmin(slug), [slug])
   const r = restaurant.data
   const members = useData(() => (r ? listMembers(r.id) : Promise.resolve([])), [r?.id])
@@ -29,7 +29,7 @@ export function RestaurantAdmin() {
   if (!r) return <AdminError message="Restaurante no encontrado o sin acceso." />
 
   const tabs: { id: Tab; label: string; show: boolean }[] = [
-    { id: 'pedidos', label: '🛎️ Pedidos', show: true },
+    { id: 'mesas-live', label: '🛎️ Llamadas', show: true },
     { id: 'menu', label: '📋 Menú', show: true },
     { id: 'mesas', label: '🔳 Mesas y QR', show: true },
     { id: 'sugerencias', label: '💡 Sugerencias', show: true },
@@ -57,7 +57,7 @@ export function RestaurantAdmin() {
         ))}
       </nav>
       <main className="admin-main">
-        {tab === 'pedidos' && <OrdersPanel restaurant={r} />}
+        {tab === 'mesas-live' && <CallsPanel restaurant={r} />}
         {tab === 'menu' && <MenuPanel restaurant={r} />}
         {tab === 'mesas' && <TablesPanel restaurant={r} canEdit={isOwner} onSaved={restaurant.reload} />}
         {tab === 'sugerencias' && <SuggestionsPanel restaurant={r} />}

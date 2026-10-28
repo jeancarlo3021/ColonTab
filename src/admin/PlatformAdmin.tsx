@@ -6,7 +6,7 @@ import { isDemo } from '../lib/supabase'
 import { errorText, useData } from '../lib/useData'
 import { Modal } from '../components/Modal'
 import { AdminHeader } from './AdminShell'
-import { Stat } from './panels/OrdersPanel'
+import { Stat } from '../components/Stat'
 import type { RestaurantSummary } from '../types'
 
 export function PlatformAdmin() {
@@ -36,7 +36,7 @@ export function PlatformAdmin() {
         <div className="stats">
           <Stat label="Restaurantes" value={String(data?.length ?? '—')} />
           <Stat label="Activos" value={String(data?.filter((r) => r.active).length ?? '—')} />
-          <Stat label="Pedidos totales" value={String(data?.reduce((s, r) => s + r.order_count, 0) ?? '—')} />
+          <Stat label="Llamadas de mesas" value={String(data?.reduce((s, r) => s + r.request_count, 0) ?? '—')} />
         </div>
 
         <div className="row-between">
@@ -54,7 +54,7 @@ export function PlatformAdmin() {
                   <th>Restaurante</th>
                   <th>Dueño</th>
                   <th>Mesas</th>
-                  <th>Pedidos</th>
+                  <th>Llamadas</th>
                   <th>Estado</th>
                   <th />
                 </tr>
@@ -117,7 +117,7 @@ function Row({ r, onToggle, onDelete }: { r: RestaurantSummary; onToggle: () => 
       </td>
       <td>{r.owner_email ?? <span className="muted">Sin dueño</span>}</td>
       <td>{r.table_count}</td>
-      <td>{r.order_count}</td>
+      <td>{r.request_count}</td>
       <td>
         <button className={`tag ${r.active ? 'tag-on' : 'tag-off'}`} onClick={onToggle} title="Cambiar estado">
           {r.active ? 'Activo' : 'Inactivo'}
