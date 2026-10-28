@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../context'
 import { requestService, sendSuggestion } from '../lib/api'
@@ -6,7 +6,6 @@ import { Logo } from '../components/Logo'
 import { Modal } from '../components/Modal'
 import { Toast } from '../components/Toast'
 import { ReadyToOrder } from '../components/ReadyToOrder'
-import { Icon, type IconName } from '../components/Icon'
 import type { PaymentMethod, Restaurant } from '../types'
 
 type Sheet = null | 'waiter' | 'bill' | 'wifi' | 'social' | 'hours' | 'suggest' | 'guests'
@@ -22,68 +21,59 @@ export function Home() {
     ? `https://wa.me/${restaurant.whatsapp}?text=${encodeURIComponent(`Hola, estoy en la mesa ${table}.`)}`
     : null
 
-  const menuType = restaurant.menu_type ?? 'custom'
-  const menuSub = menuType === 'pdf' ? 'Carta en PDF' : menuType === 'url' ? 'Se abre la carta del restaurante' : 'Platillos, bebidas y precios'
-  const hasSocial = !!(restaurant.instagram || restaurant.tiktok)
-
   return (
-    <main className="c-home">
-      <header className="c-top">
-        <div className="c-top-brand">
-          <Logo restaurant={restaurant} size={40} />
-          <span>{restaurant.name}</span>
-        </div>
-        <div className="c-table" aria-label={`Mesa ${table}`}>
-          <span className="c-table-label">Mesa</span>
-          <span className="c-table-num">{String(table).padStart(2, '0')}</span>
-        </div>
-        <p className="c-top-note">¿No es tu mesa? Escanea el código de la tuya.</p>
+    <main className="home">
+      <header className="hero">
+        <Logo restaurant={restaurant} />
+        <p className="welcome">Te damos la bienvenida a</p>
+        <h1>{restaurant.name}</h1>
+        <span className="table-pill">🍴 Mesa {table}</span>
+        <p className="hint">¿No es tu mesa? Escanea el QR de tu mesa</p>
       </header>
 
-      <section className="c-guests" aria-label="Número de personas">
-        <span className="c-guests-label"><Icon name="users" size={18} /> ¿Cuántos son?</span>
-        <div className="c-seg" role="group">
+      <section className="guests" aria-label="Número de personas">
+        <p className="hint">👥 ¿Cuántos son? · opcional</p>
+        <div className="guest-row">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <button key={n} className={guests === n ? 'on' : ''} onClick={() => setGuests(guests === n ? null : n)} aria-pressed={guests === n}>
+            <button
+              key={n}
+              className={`chip ${guests === n ? 'active' : ''}`}
+              onClick={() => setGuests(guests === n ? null : n)}
+              aria-pressed={guests === n}
+            >
               {n}
             </button>
           ))}
-          <button className={guests && guests > 6 ? 'on' : ''} onClick={() => setSheet('guests')} aria-label="Más de 6">
-            {guests && guests > 6 ? guests : '7+'}
+          <button
+            className={`chip ${guests && guests > 6 ? 'active' : ''}`}
+            onClick={() => setSheet('guests')}
+            aria-label="Más de 6"
+          >
+            {guests && guests > 6 ? guests : '+'}
           </button>
         </div>
       </section>
 
-      <Link to="menu" className="c-menu-link">
-        <Icon name="menu" size={28} />
-        <span>
-          <strong>Ver el menú</strong>
-          <small>{menuSub}</small>
-        </span>
-        <Icon name="chevron" />
-      </Link>
+      <ReadyToOrder />
+      <Link to="menu" className="menu-link">📖 Ver el menú</Link>
 
-      <Group title="Servicio">
-        <Row icon="bell" label="Llamar al mesero" onClick={() => setSheet('waiter')} />
-        <Row icon="receipt" label="Pedir la cuenta" sub="Tarjeta, efectivo o SINPE Móvil" onClick={() => setSheet('bill')} />
-      </Group>
-
-      <Group title="Mientras esperas">
-        <Row icon="games" label="Juegos" sub="Gato y memoria" to="juegos" />
-        {restaurant.wifi_ssid && <Row icon="wifi" label="Wi-Fi" sub={restaurant.wifi_ssid} onClick={() => setSheet('wifi')} />}
-      </Group>
-
-      <Group title="El restaurante">
-        {whatsappUrl && <Row icon="chat" label="Escríbenos por WhatsApp" href={whatsappUrl} />}
-        {hasSocial && <Row icon="camera" label="Redes sociales" onClick={() => setSheet('social')} />}
-        {restaurant.google_review_url && <Row icon="star" label="Califícanos en Google" href={restaurant.google_review_url} />}
-        <Row icon="pin" label="Cómo llegar y horario" sub={restaurant.address ?? undefined} onClick={() => setSheet('hours')} />
-        <Row icon="idea" label="Sugerencias" sub="Cuéntanos cómo mejorar" onClick={() => setSheet('suggest')} />
-      </Group>
+      <div className="grid">
+        <Tile emoji="🙋" label="Llamar al mesero" onClick={() => setSheet('waiter')} />
+        <Tile emoji="🧾" label="Pedir la cuenta / Pagar" onClick={() => setSheet('bill')} />
+        <Tile emoji="🎮" label="Juegos mientras esperas" to="juegos" />
+        {restaurant.wifi_ssid && <Tile emoji="📶" label="Wi-Fi" onClick={() => setSheet('wifi')} />}
+        {whatsappUrl && <Tile emoji="💬" label="Escríbenos por WhatsApp" href={whatsappUrl} />}
+        {(restaurant.instagram || restaurant.tiktok) && (
+          <Tile emoji="📸" label="Redes sociales" onClick={() => setSheet('social')} />
+        )}
+        {restaurant.google_review_url && (
+          <Tile emoji="⭐" label="Califícanos en Google" href={restaurant.google_review_url} />
+        )}
+        <Tile emoji="📍" label="Cómo llegar y horario" onClick={() => setSheet('hours')} />
+        <Tile emoji="💡" label="Sugerencias" onClick={() => setSheet('suggest')} wide />
+      </div>
 
       <footer className="powered">Hecho con <a href="https://www.colontab.com" target="_blank" rel="noopener"><strong>ColonTab</strong></a></footer>
-
-      <ReadyToOrder variant="bar" />
 
       {sheet === 'waiter' && (
         <ConfirmService
@@ -116,17 +106,17 @@ export function Home() {
         <Modal title="Síguenos" onClose={close}>
           <div className="stack">
             {restaurant.instagram && (
-              <a className="btn btn-ghost" href={restaurant.instagram} target="_blank" rel="noreferrer"><Icon name="camera" size={20} /> Instagram</a>
+              <a className="btn btn-ghost" href={restaurant.instagram} target="_blank" rel="noreferrer">📸 Instagram</a>
             )}
             {restaurant.tiktok && (
-              <a className="btn btn-ghost" href={restaurant.tiktok} target="_blank" rel="noreferrer"><Icon name="external" size={20} /> TikTok</a>
+              <a className="btn btn-ghost" href={restaurant.tiktok} target="_blank" rel="noreferrer">🎵 TikTok</a>
             )}
           </div>
         </Modal>
       )}
       {sheet === 'hours' && (
         <Modal title="Cómo llegar y horario" onClose={close}>
-          {restaurant.address && <p className="address">{restaurant.address}</p>}
+          {restaurant.address && <p className="address">📍 {restaurant.address}</p>}
           {restaurant.hours && <p className="hours">{restaurant.hours}</p>}
           {restaurant.maps_url && (
             <a className="btn btn-primary" href={restaurant.maps_url} target="_blank" rel="noreferrer">Abrir en Maps</a>
@@ -157,37 +147,17 @@ export function Home() {
   )
 }
 
-function Group({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="c-group">
-      <h2>{title}</h2>
-      <ul>{children}</ul>
-    </section>
-  )
-}
-
-function Row(props: { icon: IconName; label: string; sub?: string; onClick?: () => void; to?: string; href?: string }) {
+function Tile(props: { emoji: string; label: string; onClick?: () => void; to?: string; href?: string; wide?: boolean }) {
+  const cls = `tile ${props.wide ? 'wide' : ''}`
   const inner = (
     <>
-      <Icon name={props.icon} className="c-row-icon" />
-      <span className="c-row-text">
-        <span>{props.label}</span>
-        {props.sub && <small>{props.sub}</small>}
-      </span>
-      <Icon name={props.href ? 'external' : 'chevron'} size={18} className="c-row-go" />
+      <span className="tile-emoji" aria-hidden>{props.emoji}</span>
+      <span>{props.label}</span>
     </>
   )
-  return (
-    <li>
-      {props.to ? (
-        <Link className="c-row" to={props.to}>{inner}</Link>
-      ) : props.href ? (
-        <a className="c-row" href={props.href} target="_blank" rel="noreferrer">{inner}</a>
-      ) : (
-        <button className="c-row" onClick={props.onClick}>{inner}</button>
-      )}
-    </li>
-  )
+  if (props.to) return <Link className={cls} to={props.to}>{inner}</Link>
+  if (props.href) return <a className={cls} href={props.href} target="_blank" rel="noreferrer">{inner}</a>
+  return <button className={cls} onClick={props.onClick}>{inner}</button>
 }
 
 function useSubmit(onClose: () => void) {
@@ -232,9 +202,9 @@ function BillSheet(props: { restaurant: Restaurant; onClose: () => void; onConfi
   const [method, setMethod] = useState<PaymentMethod>('tarjeta')
   const { busy, error, run } = useSubmit(props.onClose)
   const options: { id: PaymentMethod; label: string }[] = [
-    { id: 'tarjeta', label: 'Tarjeta' },
-    { id: 'efectivo', label: 'Efectivo' },
-    { id: 'transferencia', label: 'SINPE Móvil' },
+    { id: 'tarjeta', label: '💳 Tarjeta' },
+    { id: 'efectivo', label: '💵 Efectivo' },
+    { id: 'transferencia', label: '📲 SINPE Móvil' },
   ]
   return (
     <Modal title="Pedir la cuenta" onClose={props.onClose}>

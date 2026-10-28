@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '../context'
 import { requestService } from '../lib/api'
 import { Toast } from './Toast'
-import { Icon } from './Icon'
 
 const COOLDOWN_MS = 45_000
 
@@ -51,15 +50,10 @@ export function ReadyToOrder({ variant = 'big' }: { variant?: 'big' | 'bar' }) {
 
   return (
     <>
-      {(() => {
-        const button = (
-          <button className={variant === 'bar' ? 'ready-bar' : 'cta'} disabled={busy || waiting} onClick={() => void send()}>
-            <Icon name={waiting ? 'check' : 'hand'} size={22} />
-            {busy ? 'Avisando…' : waiting ? 'Mesero avisado, ya viene' : 'Estoy listo para ordenar'}
-          </button>
-        )
-        return variant === 'bar' ? <div className="c-dock">{button}</div> : button
-      })()}
+      <button className={variant === 'bar' ? 'ready-bar' : 'cta'} disabled={busy || waiting} onClick={() => void send()}>
+        <span aria-hidden>{waiting ? '✅' : '🙋'}</span>
+        {busy ? 'Avisando…' : waiting ? 'Mesero avisado, ya viene' : 'Estoy listo para ordenar'}
+      </button>
       {toast && <Toast message={toast} onDone={clearToast} />}
     </>
   )
