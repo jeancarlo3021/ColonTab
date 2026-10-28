@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom'
-import { getRestaurant, resolveTable } from '../lib/api'
+import { getRestaurant, isAvailable, resolveTable } from '../lib/api'
 import { SessionProvider } from '../context'
 import type { Restaurant } from '../types'
 import { NotFound } from './NotFound'
 import { brandVars } from '../lib/color'
 import { EntryWelcome } from '../components/EntryWelcome'
 
-type Loaded = { restaurant: Restaurant; table: number } | null | undefined
+type Loaded = { restaurant: Restaurant; table: number; available: boolean } | null | undefined
 
 /**
  * Dos formas de abrir una mesa:
@@ -28,7 +28,7 @@ export function RestaurantLayout() {
     setError(null)
     const load = token
       ? resolveTable(token)
-      : getRestaurant(slug).then((r) => (r ? { restaurant: r, table: previewTable } : null))
+      : getRestaurant(slug).then((r) => (r ? { restaurant: r, table: previewTable, available: isAvailable(r) } : null))
     load.then((v) => alive && setLoaded(v)).catch((e: Error) => alive && setError(e.message))
     return () => {
       alive = false
@@ -45,7 +45,7 @@ export function RestaurantLayout() {
   if (loaded === null) {
     return <NotFound message={token ? 'Este código de mesa no es válido. Escanea el QR o la etiqueta NFC de tu mesa.' : 'Restaurante no encontrado.'} />
   }
-  if (!loaded.restaurant.active) return <NotFound message="Este restaurante no está disponible por ahora." />
+  if (!loaded.available) return <NotFound message="Este restaurante no está disponible por ahora." />
 
   return (
     <SessionProvider restaurant={loaded.restaurant} table={loaded.table} token={token ?? null}>

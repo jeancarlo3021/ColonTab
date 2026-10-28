@@ -3,8 +3,9 @@ import { supabase } from './supabase'
 import { DEMO_EVENT, demoTables, emptyRestaurant, newToken, readDB, uid, wait, writeDB } from './demoStore'
 import type {
   Member, MemberRole, MenuCategory, MenuItem, Restaurant, RestaurantSummary,
-  ServiceRequest, Suggestion, TableToken, Visit,
+  RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, TableToken, Visit,
 } from '../types'
+import { nextPeriodStart, periodEnd } from './billing'
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message)
@@ -16,7 +17,7 @@ export const slugify = (s: string) =>
 
 // ───────── Cuenta ─────────
 export async function checkPlatformAdmin(email: string): Promise<boolean> {
-  if (!supabase) return true
+  if (!supabase) return email.toLowerCase() === 'admin@colontab.app' // modo demo
   const data = check(await supabase.from('platform_admins').select('email').eq('email', email.toLowerCase()).maybeSingle())
   return !!data
 }
@@ -57,15 +58,21 @@ export async function listAllRestaurants(): Promise<RestaurantSummary[]> {
       ...r,
       owner_email: db.members.find((m) => m.restaurant_id === r.id && m.role === 'owner')?.email ?? null,
       request_count: db.serviceRequests.filter((o) => o.restaurant_id === r.id).length,
+      billing: demoBilling(db, r.id),
     }))
   }
   const rows = check(
-    await supabase.from('restaurants').select('*, service_requests(count), restaurant_members(email, role)').order('created_at'),
-  ) as (Restaurant & { service_requests: { count: number }[]; restaurant_members: { email: string; role: MemberRole }[] })[]
-  return rows.map(({ service_requests, restaurant_members, ...r }) => ({
+    await supabase.from('restaurants').select('*, service_requests(count), restaurant_members(email, role), restaurant_billing(plan_price, plan_currency, note)').order('created_at'),
+  ) as (Restaurant & {
+    service_requests: { count: number }[]
+    restaurant_members: { email: string; role: MemberRole }[]
+    restaurant_billing: RestaurantBilling | RestaurantBilling[] | null
+  })[]
+  return rows.map(({ service_requests, restaurant_members, restaurant_billing, ...r }) => ({
     ...r,
     owner_email: restaurant_members.find((m) => m.role === 'owner')?.email ?? null,
     request_count: service_requests[0]?.count ?? 0,
+    billing: normBilling(Array.isArray(restaurant_billing) ? restaurant_billing[0] : restaurant_billing),
   }))
 }
 
@@ -311,4 +318,95 @@ export async function regenerateTableTokens(restaurantId: string, number: number
   }
   const { error } = await supabase.rpc('regenerate_table_tokens', { p_restaurant_id: restaurantId, p_number: number })
   if (error) throw new Error(error.message)
+}
+
+// ───────── Cobro anual ─────────
+function normBilling(b: RestaurantBilling | null | undefined): RestaurantBilling | null {
+  return b ? { ...b, plan_price: b.plan_price === null ? null : Number(b.plan_price) } : null
+}
+
+function demoBilling(db: ReturnType<typeof readDB>, restaurantId: string): RestaurantBilling | null {
+  const b = db.billing?.find((x) => x.restaurant_id === restaurantId)
+  return b ? { plan_price: b.plan_price, plan_currency: b.plan_currency, note: b.note } : null
+}
+
+export async function getBilling(restaurantId: string): Promise<RestaurantBilling | null> {
+  if (!supabase) return demoBilling(readDB(), restaurantId)
+  const data = check(
+    await supabase.from('restaurant_billing').select('plan_price, plan_currency, note').eq('restaurant_id', restaurantId).maybeSingle(),
+  ) as RestaurantBilling | null
+  return normBilling(data)
+}
+
+export async function saveBilling(restaurantId: string, billing: RestaurantBilling): Promise<void> {
+  if (!supabase) {
+    return writeDB((db) => {
+      db.billing ??= []
+      const found = db.billing.find((b) => b.restaurant_id === restaurantId)
+      if (found) Object.assign(found, billing)
+      else db.billing.push({ restaurant_id: restaurantId, ...billing })
+    })
+  }
+  check(await supabase.from('restaurant_billing').upsert({ restaurant_id: restaurantId, ...billing, updated_at: new Date().toISOString() }))
+}
+
+const normPayment = (p: SubscriptionPayment): SubscriptionPayment => ({ ...p, amount: Number(p.amount) })
+
+export async function listPayments(restaurantId?: string): Promise<SubscriptionPayment[]> {
+  if (!supabase) {
+    return (readDB().payments ?? [])
+      .filter((p) => !restaurantId || p.restaurant_id === restaurantId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  }
+  let q = supabase.from('subscription_payments').select('*').order('created_at', { ascending: false }).limit(2000)
+  if (restaurantId) q = q.eq('restaurant_id', restaurantId)
+  return (check(await q) as SubscriptionPayment[]).map(normPayment)
+}
+
+/** Registra un pago y extiende el servicio. Devuelve el nuevo vencimiento. */
+export async function registerPayment(
+  restaurantId: string,
+  p: { amount: number; currency: string; method: string | null; note: string | null; months: number },
+): Promise<string> {
+  if (!supabase) {
+    await wait()
+    const r = readDB().restaurants.find((x) => x.id === restaurantId)
+    if (!r) throw new Error('Restaurante no encontrado')
+    const start = nextPeriodStart(r.paid_until)
+    const end = periodEnd(start, p.months)
+    writeDB((db) => {
+      db.payments ??= []
+      db.payments.push({
+        id: uid(), restaurant_id: restaurantId, amount: p.amount, currency: p.currency, method: p.method, note: p.note,
+        period_start: start, period_end: end, created_by: 'admin@colontab.app', created_at: new Date().toISOString(),
+      })
+      const rr = db.restaurants.find((x) => x.id === restaurantId)
+      if (rr) rr.paid_until = end
+      db.billing ??= []
+      const b = db.billing.find((x) => x.restaurant_id === restaurantId)
+      if (!b) db.billing.push({ restaurant_id: restaurantId, plan_price: p.months === 12 ? p.amount : null, plan_currency: p.currency, note: null })
+      else if (b.plan_price === null && p.months === 12) b.plan_price = p.amount
+    })
+    return end
+  }
+  const { data, error } = await supabase.rpc('register_payment', {
+    p_restaurant_id: restaurantId,
+    p_amount: p.amount,
+    p_currency: p.currency,
+    p_method: p.method,
+    p_note: p.note,
+    p_months: p.months,
+  })
+  if (error) throw new Error(error.message)
+  return data as string
+}
+
+/** Cambia a mano el último día de servicio (null = sin fecha, no se bloquea). */
+export async function setPaidUntil(restaurantId: string, date: string | null): Promise<void> {
+  return updateRestaurant(restaurantId, { paid_until: date })
+}
+
+export async function deletePayment(id: string): Promise<void> {
+  if (!supabase) return writeDB((db) => void (db.payments = (db.payments ?? []).filter((p) => p.id !== id)))
+  check(await supabase.from('subscription_payments').delete().eq('id', id))
 }

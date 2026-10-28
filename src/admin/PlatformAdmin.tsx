@@ -8,11 +8,14 @@ import { Modal } from '../components/Modal'
 import { AdminHeader } from './AdminShell'
 import { brandVars, GREEN } from '../lib/color'
 import { Stat } from '../components/Stat'
+import { BillingPanel } from './BillingPanel'
+import { serviceStatus, STATE_LABEL } from '../lib/billing'
 import type { RestaurantSummary } from '../types'
 
 export function PlatformAdmin() {
   const { data, error, reload } = useData(listAllRestaurants, [])
   const [creating, setCreating] = useState(false)
+  const [view, setView] = useState<'restaurants' | 'billing'>('restaurants')
   const [query, setQuery] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -34,6 +37,11 @@ export function PlatformAdmin() {
     <div className="admin">
       <AdminHeader title="Plataforma ColonTab" subtitle="Administración de todos los restaurantes" back="/admin" />
       <main className="admin-main stack-lg">
+        <div className="segmented view-switch">
+          <button className={view === 'restaurants' ? 'active' : ''} onClick={() => setView('restaurants')}>🏢 Restaurantes</button>
+          <button className={view === 'billing' ? 'active' : ''} onClick={() => setView('billing')}>💳 Cobros</button>
+        </div>
+        {view === 'billing' ? <BillingPanel /> : <>
         <div className="stats">
           <Stat label="Restaurantes" value={String(data?.length ?? '—')} />
           <Stat label="Activos" value={String(data?.filter((r) => r.active).length ?? '—')} />
@@ -57,6 +65,7 @@ export function PlatformAdmin() {
                   <th>Mesas</th>
                   <th>Llamadas</th>
                   <th>Estado</th>
+                  <th>Servicio</th>
                   <th />
                 </tr>
               </thead>
@@ -73,7 +82,7 @@ export function PlatformAdmin() {
                   />
                 ))}
                 {list.length === 0 && (
-                  <tr><td colSpan={6} className="muted center-text">No hay restaurantes.</td></tr>
+                  <tr><td colSpan={7} className="muted center-text">No hay restaurantes.</td></tr>
                 )}
               </tbody>
             </table>
@@ -88,6 +97,7 @@ export function PlatformAdmin() {
             Reiniciar datos de demo
           </button>
         )}
+        </>}
       </main>
 
       {creating && (
@@ -123,6 +133,12 @@ function Row({ r, onToggle, onDelete }: { r: RestaurantSummary; onToggle: () => 
         <button className={`tag ${r.active ? 'tag-on' : 'tag-off'}`} onClick={onToggle} title="Cambiar estado">
           {r.active ? 'Activo' : 'Inactivo'}
         </button>
+      </td>
+      <td>
+        {(() => {
+          const st = serviceStatus(r.paid_until)
+          return <span className={`tag state-${st.state}`}>{STATE_LABEL[st.state]}</span>
+        })()}
       </td>
       <td>
         <div className="order-actions">

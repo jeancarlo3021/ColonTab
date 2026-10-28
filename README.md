@@ -64,6 +64,20 @@ Tablas: `restaurants`, `menu_categories`, `menu_items`, `orders`, `order_items`,
 Los clientes (rol `anon`) solo pueden leer el restaurante y el menú, y crear llamadas y sugerencias.
 Solo el personal del restaurante puede verlas.
 
+## Cobro anual por restaurante
+
+- **Tu panel → Cobros** (solo administrador de la plataforma): estado de cada restaurante (al día, por vencer,
+  vencido, sin fecha), cobrado en el año, **Registrar pago** (suma 12 meses al vencimiento, o desde hoy si ya venció),
+  **Editar** (precio anual y fecha a mano), **Historial** y **Avisar** (correo prellenado o mensaje para WhatsApp).
+- **Panel del restaurante → Servicio**: días restantes, fecha de vencimiento, precio y pagos.
+- **7 días antes**: franja de aviso en el panel y una ventana una vez al día.
+- **Al día siguiente del vencimiento**: el panel del restaurante se bloquea y sus mesas no pueden enviar avisos
+  (la base de datos los rechaza). El último día pagado todavía funciona. La plataforma siempre puede entrar.
+- Sin fecha = no se bloquea (para restaurantes que aún no pagan el primer año).
+- El dueño no puede cambiar su fecha ni el precio (lo impide la base de datos). El precio vive en `restaurant_billing`,
+  que los clientes no pueden leer.
+- Requiere [`supabase/migrations/009_cobro_anual.sql`](supabase/migrations/009_cobro_anual.sql).
+
 ## Notificaciones en pantalla
 
 En la pestaña **Llamadas** se activan las notificaciones del sistema: cuando una mesa llama aparece la

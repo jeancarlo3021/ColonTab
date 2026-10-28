@@ -1,6 +1,7 @@
 // Base de datos falsa en el navegador (localStorage) para probar la app sin Supabase.
 // Los pedidos que hace un cliente en una pestaña aparecen en el panel abierto en otra.
-import type { Member, MenuCategory, MenuItem, Order, Restaurant, ServiceRequest, Suggestion, Visit } from '../types'
+import type { Member, MenuCategory, MenuItem, Order, Restaurant, RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, Visit } from '../types'
+import { addDays, crToday, periodEnd } from './billing'
 
 export interface DemoDB {
   restaurants: Restaurant[]
@@ -13,6 +14,8 @@ export interface DemoDB {
   visits?: Visit[]
   /** Códigos secretos de cada mesa (QR/NFC) */
   tables?: { restaurant_id: string; number: number; token: string }[]
+  billing?: (RestaurantBilling & { restaurant_id: string })[]
+  payments?: SubscriptionPayment[]
 }
 
 const KEY = 'mesaclick:demo-db:v1'
@@ -45,6 +48,7 @@ export function emptyRestaurant(partial: Partial<Restaurant> & Pick<Restaurant, 
     active: true,
     menu_type: 'custom',
     menu_url: null,
+    paid_until: null,
     ...partial,
   }
 }
@@ -67,6 +71,7 @@ function seed(): DemoDB {
     address: 'Av. Principal 123, Centro',
     hours: 'Lun a Jue: 12:00 – 22:00\nVie y Sáb: 12:00 – 00:00\nDom: 12:00 – 18:00',
   })
+  r.paid_until = periodEnd(addDays(crToday(), -165), 12)
   const cats = ['Entradas', 'Platos fuertes', 'Bebidas', 'Postres'].map((name, i) => ({
     id: `c${i + 1}`, restaurant_id: r.id, name, position: i + 1,
   }))
@@ -92,6 +97,8 @@ function seed(): DemoDB {
     serviceRequests: [],
     suggestions: [],
     members: [{ id: uid(), restaurant_id: r.id, email: 'dueno@laesquina.mx', role: 'owner' }],
+    billing: [{ restaurant_id: r.id, plan_price: 120000, plan_currency: 'CRC', note: null }],
+    payments: [demoPayment(r.id, addDays(crToday(), -165))],
   }
 }
 
@@ -154,4 +161,11 @@ export function demoTables(): DemoDB {
   }
   if (!db.tables || missing.length) writeDB((d) => void (d.tables = [...(d.tables ?? []), ...missing]))
   return readDB()
+}
+
+function demoPayment(restaurantId: string, start: string): SubscriptionPayment {
+  return {
+    id: uid(), restaurant_id: restaurantId, amount: 120000, currency: 'CRC', method: 'SINPE Móvil', note: 'Plan anual',
+    period_start: start, period_end: periodEnd(start, 12), created_by: 'admin@colontab.app', created_at: new Date(`${start}T15:00:00Z`).toISOString(),
+  }
 }

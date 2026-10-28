@@ -1,6 +1,7 @@
 // Funciones que usa la app del cliente (la que abre el QR).
 import { supabase } from './supabase'
 import { demoTables, readDB, uid, wait, writeDB } from './demoStore'
+import { serviceStatus } from './billing'
 import type { MenuCategory, MenuItem, PaymentMethod, Restaurant, ServiceType, VisitSource } from '../types'
 
 export async function getRestaurant(slug: string): Promise<Restaurant | null> {
@@ -40,6 +41,11 @@ export async function getMenu(
   }
 }
 
+/** Activo y con el servicio al día (el último día pagado todavía cuenta). */
+export function isAvailable(r: Restaurant) {
+  return r.active && serviceStatus(r.paid_until).state !== 'expired'
+}
+
 /** Mensaje cuando se abre una mesa sin código (vista previa del restaurante). */
 export const PREVIEW_MESSAGE = 'Esto es una vista previa. Escanea el QR o la etiqueta NFC de tu mesa para avisar al personal.'
 
@@ -47,21 +53,23 @@ export const PREVIEW_MESSAGE = 'Esto es una vista previa. Escanea el QR o la eti
  * Busca la mesa de un código de QR/NFC. El código es secreto y aleatorio: cambiar la dirección
  * no permite pasar a otra mesa. La base de datos vuelve a validarlo en cada aviso.
  */
-export async function resolveTable(token: string): Promise<{ restaurant: Restaurant; table: number } | null> {
+export async function resolveTable(token: string): Promise<{ restaurant: Restaurant; table: number; available: boolean } | null> {
   if (!/^[A-Za-z0-9]{4,32}$/.test(token)) return null
   if (!supabase) {
     const db = demoTables()
     const t = db.tables!.find((x) => x.token === token)
     const restaurant = t && db.restaurants.find((r) => r.id === t.restaurant_id)
-    if (!t || !restaurant || !restaurant.active || t.number > restaurant.table_count) return null
-    return { restaurant, table: t.number }
+    if (!t || !restaurant || t.number > restaurant.table_count) return null
+    return { restaurant, table: t.number, available: isAvailable(restaurant) }
   }
   const { data, error } = await supabase.rpc('resolve_table', { p_token: token })
   if (error) throw error
-  const row = (data as { slug: string; table_number: number }[] | null)?.[0]
+  const row = (data as { slug: string; table_number: number; available?: boolean }[] | null)?.[0]
   if (!row) return null
   const restaurant = await getRestaurant(row.slug)
-  return restaurant ? { restaurant, table: row.table_number } : null
+  if (!restaurant) return null
+  // "available" viene de la base (activo y con servicio al día); si aún no existe la columna, se calcula aquí
+  return { restaurant, table: row.table_number, available: row.available ?? isAvailable(restaurant) }
 }
 
 /** Mesa de un código en modo demo (o null). */
@@ -70,7 +78,8 @@ function demoTable(token: string | null) {
   const db = demoTables()
   const t = db.tables!.find((x) => x.token === token)
   const r = t && db.restaurants.find((x) => x.id === t.restaurant_id)
-  if (!t || !r || !r.active || t.number > r.table_count) throw new Error('Mesa no válida. Escanea el código de tu mesa.')
+  if (!t || !r || t.number > r.table_count) throw new Error('Mesa no válida. Escanea el código de tu mesa.')
+  if (!isAvailable(r)) throw new Error('Este restaurante no está disponible por ahora.')
   return { restaurantId: r.id, table: t.number }
 }
 

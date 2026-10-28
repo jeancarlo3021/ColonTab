@@ -247,3 +247,42 @@
 .qr-links { flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
 .qr-links a, .qr-links button { white-space: nowrap; }
 .nfc-url mark { background: var(--green); color: var(--navy); border-radius: 4px; padding: 0 3px; font-weight: 700; }
+
+/* ───── Servicio (cobro anual) ───── */
+.header-service { font-size: 0.8rem; color: #a9b3c1; }
+.header-service.soon { color: #fdb022; font-weight: 700; }
+.header-service.expired { color: #f97066; font-weight: 700; }
+.service-banner {
+  display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 14px; margin-bottom: 16px;
+  background: #fff4e5; color: #7a2e0e; border: 1px solid #fedf89;
+}
+.service-banner.expired { background: #fef3f2; color: #7a271a; border-color: #fecdca; }
+.service-banner span { flex: 1; min-width: 220px; }
+.service-blocked { max-width: 560px; margin: 24px auto; gap: 14px; }
+.service-blocked h2 { font-size: 1.4rem; }
+.service-blocked .btn { width: auto; padding: 14px 28px; }
+.service-countdown { display: flex; align-items: baseline; justify-content: center; gap: 10px; padding: 16px; border-radius: 14px; background: #fff4e5; color: #7a2e0e; }
+.service-countdown strong { font-family: var(--font-title); font-size: 3rem; line-height: 1; }
+.service-card .service-big { display: flex; align-items: baseline; gap: 10px; }
+.service-big strong { font-family: var(--font-title); font-size: 3.2rem; line-height: 1; color: var(--brand-dark); }
+.service-card.soon .service-big strong { color: #b54708; }
+.service-card.expired .service-big strong { color: var(--danger); }
+.service-bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.service-bar span { display: block; height: 100%; background: var(--green); border-radius: 999px; }
+.service-card.soon .service-bar span { background: #f79009; }
+.service-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.service-facts > div { background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+.service-facts small { color: var(--muted); }
+.service-card > .btn { align-self: flex-start; }
+.state-ok { background: var(--brand-soft); color: var(--brand-dark); }
+.state-soon { background: #fff4e5; color: #b54708; }
+.state-expired { background: #fef3f2; color: var(--danger); }
+.state-none { background: var(--line); color: var(--text-2); }
+.payment-list { list-style: none; margin: 0; padding: 0; }
+.payment-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.payment-list li:last-child { border-bottom: 0; }
+.payment-list li > div { display: flex; flex-direction: column; }
+.cell-stack { display: flex; flex-direction: column; }
+.billing-filter { max-width: 480px; }
+.view-switch { max-width: 360px; }

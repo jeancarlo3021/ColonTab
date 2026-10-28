@@ -22,6 +22,8 @@ export interface Restaurant {
   /** custom = menú armado en ColonTab, pdf = archivo PDF, url = menú en otro sitio */
   menu_type?: MenuType
   menu_url?: string | null
+  /** Último día con servicio pagado (AAAA-MM-DD). null = sin fecha */
+  paid_until?: string | null
 }
 
 export type MenuType = 'custom' | 'pdf' | 'url'
@@ -117,4 +119,25 @@ export interface Member {
 export interface RestaurantSummary extends Restaurant {
   owner_email: string | null
   request_count: number
+  billing: RestaurantBilling | null
+}
+
+/** Precio del plan anual (privado: solo el dueño y la plataforma) */
+export interface RestaurantBilling {
+  plan_price: number | null
+  plan_currency: string
+  note: string | null
+}
+
+export interface SubscriptionPayment {
+  id: string
+  restaurant_id: string
+  amount: number
+  currency: string
+  method: string | null
+  note: string | null
+  period_start: string
+  period_end: string
+  created_by: string | null
+  created_at: string
 }

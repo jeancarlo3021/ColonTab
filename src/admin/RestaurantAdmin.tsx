@@ -10,8 +10,11 @@ import { TablesPanel } from './panels/TablesPanel'
 import { SettingsPanel } from './panels/SettingsPanel'
 import { SuggestionsPanel } from './panels/SuggestionsPanel'
 import { TeamPanel } from './panels/TeamPanel'
+import { ServicePanel } from './panels/ServicePanel'
+import { ServiceAlertOnce, ServiceBanner, ServiceBlocked, serviceSummary } from './ServiceNotice'
+import { serviceStatus } from '../lib/billing'
 
-type Tab = 'mesas-live' | 'menu' | 'mesas' | 'sugerencias' | 'ajustes' | 'equipo'
+type Tab = 'mesas-live' | 'menu' | 'mesas' | 'sugerencias' | 'ajustes' | 'equipo' | 'servicio'
 
 export function RestaurantAdmin() {
   const { slug = '' } = useParams()
@@ -35,7 +38,11 @@ export function RestaurantAdmin() {
     { id: 'sugerencias', label: '💡 Sugerencias', show: true },
     { id: 'ajustes', label: '⚙️ Ajustes', show: isOwner },
     { id: 'equipo', label: '👥 Equipo', show: isOwner },
+    { id: 'servicio', label: '💳 Servicio', show: isOwner },
   ]
+  const service = serviceStatus(r.paid_until)
+  const blocked = service.state === 'expired' && !isPlatformAdmin
+  const summary = serviceSummary(r)
 
   return (
     <div className="admin">
@@ -46,9 +53,19 @@ export function RestaurantAdmin() {
           <>
             Panel del restaurante · <a href={`/r/${r.slug}/1`} target="_blank" rel="noreferrer">ver como cliente ↗</a>
             {!r.active && <span className="tag tag-off" style={{ marginLeft: 8 }}>Inactivo</span>}
+            {summary && (
+              <>
+                <br />
+                <span className={`header-service ${service.state}`}>{summary}</span>
+              </>
+            )}
           </>
         }
       />
+      {blocked ? (
+        <main className="admin-main"><ServiceBlocked restaurant={r} /></main>
+      ) : (
+      <>
       <nav className="admin-tabs">
         {tabs.filter((t) => t.show).map((t) => (
           <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
@@ -57,13 +74,18 @@ export function RestaurantAdmin() {
         ))}
       </nav>
       <main className="admin-main">
+        <ServiceBanner restaurant={r} onOpen={isOwner ? () => setTab('servicio') : undefined} />
+        <ServiceAlertOnce restaurant={r} onOpen={() => setTab(isOwner ? 'servicio' : tab)} />
         {tab === 'mesas-live' && <CallsPanel restaurant={r} />}
         {tab === 'menu' && <MenuPanel restaurant={r} canEdit={isOwner} onSaved={restaurant.reload} />}
         {tab === 'mesas' && <TablesPanel restaurant={r} canEdit={isOwner} onSaved={restaurant.reload} />}
         {tab === 'sugerencias' && <SuggestionsPanel restaurant={r} />}
         {tab === 'ajustes' && isOwner && <SettingsPanel restaurant={r} onSaved={restaurant.reload} />}
         {tab === 'equipo' && isOwner && <TeamPanel restaurant={r} canAddOwners={isPlatformAdmin} />}
+        {tab === 'servicio' && isOwner && <ServicePanel restaurant={r} />}
       </main>
+      </>
+      )}
     </div>
   )
 }

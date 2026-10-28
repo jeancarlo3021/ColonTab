@@ -43,7 +43,8 @@ on conflict do nothing;
 -- (La Mesa 4 de La Esquina usaba el código público "demo"; ver 008_quitar_codigo_demo.sql)
 
 -- ───── Funciones públicas (lo único que puede hacer un cliente) ─────
-create or replace function resolve_table(p_token text)
+drop function if exists resolve_table(text);
+create function resolve_table(p_token text)
 returns table (restaurant_id uuid, slug text, table_number int)
 language sql stable security definer set search_path = public as $$
   select r.id, r.slug, t.number
