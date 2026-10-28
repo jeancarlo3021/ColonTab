@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { DEMO_EVENT, emptyRestaurant, readDB, uid, wait, writeDB } from './demoStore'
 import type {
   Member, MemberRole, MenuCategory, MenuItem, Restaurant, RestaurantSummary,
-  ServiceRequest, Suggestion,
+  ServiceRequest, Suggestion, Visit,
 } from '../types'
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
@@ -236,4 +236,20 @@ export async function addMember(restaurantId: string, email: string, role: Membe
 export async function removeMember(id: string): Promise<void> {
   if (!supabase) return writeDB((db) => void (db.members = db.members.filter((m) => m.id !== id)))
   check(await supabase.from('restaurant_members').delete().eq('id', id))
+}
+
+// ───────── Visitas (NFC / QR) ─────────
+export async function listVisits(restaurantId: string, since: Date): Promise<Visit[]> {
+  if (!supabase) {
+    return (readDB().visits ?? []).filter((v) => v.restaurant_id === restaurantId && new Date(v.created_at) >= since)
+  }
+  return check(
+    await supabase
+      .from('table_visits')
+      .select('id, restaurant_id, table_number, source, created_at')
+      .eq('restaurant_id', restaurantId)
+      .gte('created_at', since.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(10000),
+  ) as Visit[]
 }

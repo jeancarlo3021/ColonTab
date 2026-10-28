@@ -83,6 +83,17 @@ export interface Suggestion {
   created_at: string
 }
 
+/** Cómo entró el cliente a la mesa */
+export type VisitSource = 'nfc' | 'qr' | 'link'
+
+export interface Visit {
+  id: string
+  restaurant_id: string
+  table_number: number
+  source: VisitSource
+  created_at: string
+}
+
 export type MemberRole = 'owner' | 'staff'
 
 export interface Member {

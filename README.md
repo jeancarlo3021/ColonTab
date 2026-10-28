@@ -80,6 +80,14 @@ sirven). Al acercar el celular a la etiqueta, el cliente entra directo a su mesa
 - Opción de **bloquear** la etiqueta para que nadie la cambie (no se puede deshacer).
 - Desde computadora o iPhone: copia el enlace y grábalo con una app como NFC Tools.
 
+### Enlaces de mesa, bienvenida y visitas
+
+- Cada QR y etiqueta lleva un enlace corto y final: `https://www.colontab.com/m/<restaurante>-<mesa>`
+  (sin redirecciones). `?v=nfc` o `?v=qr` marca por dónde entró el cliente; `/r/<restaurante>/<mesa>` sigue funcionando.
+- Al entrar por NFC aparece "¡Listo! Estás en la Mesa X" (con vibración en Android; iPhone no permite vibrar desde la web).
+- Las visitas se guardan en `table_visits` y se ven en **Mesas y QR** (hoy, 7 y 30 días, por mesa).
+  Requiere [`supabase/migrations/005_visitas.sql`](supabase/migrations/005_visitas.sql).
+
 ## Sonido de avisos
 
 El panel toca una campana distinta para cada aviso (listo para ordenar, mesero, cuenta), generada en el

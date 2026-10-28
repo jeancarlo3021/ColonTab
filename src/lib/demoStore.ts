@@ -1,6 +1,6 @@
 // Base de datos falsa en el navegador (localStorage) para probar la app sin Supabase.
 // Los pedidos que hace un cliente en una pestaña aparecen en el panel abierto en otra.
-import type { Member, MenuCategory, MenuItem, Order, Restaurant, ServiceRequest, Suggestion } from '../types'
+import type { Member, MenuCategory, MenuItem, Order, Restaurant, ServiceRequest, Suggestion, Visit } from '../types'
 
 export interface DemoDB {
   restaurants: Restaurant[]
@@ -10,6 +10,7 @@ export interface DemoDB {
   serviceRequests: ServiceRequest[]
   suggestions: Suggestion[]
   members: Member[]
+  visits?: Visit[]
 }
 
 const KEY = 'mesaclick:demo-db:v1'

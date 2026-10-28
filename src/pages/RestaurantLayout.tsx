@@ -5,6 +5,7 @@ import { SessionProvider } from '../context'
 import type { Restaurant } from '../types'
 import { NotFound } from './NotFound'
 import { brandVars } from '../lib/color'
+import { EntryWelcome } from '../components/EntryWelcome'
 
 export function RestaurantLayout() {
   const { slug = '', mesa = '' } = useParams()
@@ -33,6 +34,7 @@ export function RestaurantLayout() {
     <SessionProvider restaurant={restaurant} table={table}>
       <div className="screen" style={brandVars(restaurant.primary_color)}>
         <Outlet />
+        <EntryWelcome />
       </div>
     </SessionProvider>
   )

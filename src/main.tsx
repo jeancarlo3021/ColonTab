@@ -11,6 +11,7 @@ import { Home } from './pages/Home'
 import { Menu } from './pages/Menu'
 import { Games } from './pages/Games'
 import { NotFound } from './pages/NotFound'
+import { ShortLink } from './pages/ShortLink'
 import { RequireAuth } from './admin/AdminShell'
 import { AdminLogin } from './admin/AdminLogin'
 import { AdminHome } from './admin/AdminHome'
@@ -28,6 +29,7 @@ const app = (
             <Route path="menu" element={<Menu />} />
             <Route path="juegos" element={<Games />} />
           </Route>
+          <Route path="/m/:code" element={<ShortLink />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<RequireAuth><AdminHome /></RequireAuth>} />
           <Route path="/admin/r/:slug" element={<RequireAuth><RestaurantAdmin /></RequireAuth>} />

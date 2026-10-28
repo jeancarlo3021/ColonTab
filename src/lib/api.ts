@@ -1,7 +1,7 @@
 // Funciones que usa la app del cliente (la que abre el QR).
 import { supabase } from './supabase'
 import { readDB, uid, wait, writeDB } from './demoStore'
-import type { MenuCategory, MenuItem, PaymentMethod, Restaurant, ServiceType } from '../types'
+import type { MenuCategory, MenuItem, PaymentMethod, Restaurant, ServiceType, VisitSource } from '../types'
 
 export async function getRestaurant(slug: string): Promise<Restaurant | null> {
   if (!supabase) return readDB().restaurants.find((r) => r.slug === slug) ?? null
@@ -98,4 +98,23 @@ export async function sendSuggestion(params: {
     message: params.message,
   })
   if (error) throw error
+}
+
+/** Registra que alguien abrió la mesa (por NFC, QR o enlace). Si falla no molesta al cliente. */
+export async function recordVisit(params: { restaurantId: string; table: number; source: VisitSource }): Promise<void> {
+  if (!supabase) {
+    return writeDB((db) => {
+      db.visits ??= []
+      db.visits.push({
+        id: uid(),
+        restaurant_id: params.restaurantId,
+        table_number: params.table,
+        source: params.source,
+        created_at: new Date().toISOString(),
+      })
+    })
+  }
+  await supabase
+    .from('table_visits')
+    .insert({ restaurant_id: params.restaurantId, table_number: params.table, source: params.source })
 }

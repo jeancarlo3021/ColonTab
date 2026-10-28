@@ -228,3 +228,5 @@
 .nfc-help { margin: 8px 0; padding-left: 20px; line-height: 1.5; }
 .notify-row { border-top: 1px solid var(--line); padding-top: 14px; }
 .notify-row p { margin-top: 2px; }
+.qr-visits { color: var(--muted); font-variant-numeric: tabular-nums; }
+.small-seg button { padding: 6px 12px; font-size: 0.85rem; white-space: nowrap; }

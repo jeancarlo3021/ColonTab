@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Modal } from '../../components/Modal'
 import { nfcCanLock, nfcErrorText, nfcSupported, writeNfcUrl } from '../../lib/nfc'
 import type { Restaurant } from '../../types'
-import { tableUrl } from './TablesPanel'
+import { tableLink } from '../../lib/links'
 
 type Status = { kind: 'idle' } | { kind: 'waiting' } | { kind: 'done'; table: number } | { kind: 'error'; text: string }
 
@@ -14,7 +14,7 @@ export function NfcWriter({ restaurant, startTable, onClose }: { restaurant: Res
   const [copied, setCopied] = useState(false)
   const abort = useRef<AbortController | null>(null)
   const supported = nfcSupported()
-  const url = tableUrl(restaurant.slug, table)
+  const url = tableLink(restaurant.slug, table, 'nfc')
 
   useEffect(() => () => abort.current?.abort(), [])
 
