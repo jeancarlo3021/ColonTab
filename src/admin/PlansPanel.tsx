@@ -29,7 +29,7 @@ export function PlansPanel() {
   return (
     <div className="stack-lg">
       <div className="row-between">
-        <p className="muted">Crea tus planes y asígnalos a cada restaurante en <b>Cobros → Editar</b>. Al registrar un pago se usa el precio del plan.</p>
+        <p className="muted">Crea tus planes y asígnalos aquí, al crear el restaurante o desde la columna <b>Plan</b> en Restaurantes y Cobros. Al registrar un pago se usa el precio del plan.</p>
         <button className="btn btn-primary small" onClick={() => setDraft({ name: '', description: '', price: 0, currency: 'CRC', months: 12, active: true })}>
           + Nuevo plan
         </button>
