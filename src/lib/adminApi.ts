@@ -82,6 +82,7 @@ export async function createRestaurant(input: {
   ownerEmail: string
   primaryColor: string
   tableCount: number
+  planId?: string | null
 }): Promise<void> {
   const base = {
     name: input.name,
@@ -94,16 +95,36 @@ export async function createRestaurant(input: {
   if (!supabase) {
     await wait()
     if (readDB().restaurants.some((r) => r.slug === input.slug)) throw new Error('Ya existe un restaurante con ese enlace')
-    return writeDB((db) => {
-      const r = emptyRestaurant(base)
+    const r = emptyRestaurant(base)
+    writeDB((db) => {
       db.restaurants.push(r)
       if (email) db.members.push({ id: uid(), restaurant_id: r.id, email, role: 'owner' })
     })
+    if (input.planId) await assignPlan(r.id, input.planId)
+    return
   }
   const created = check(await supabase.from('restaurants').insert(base).select('id').single()) as { id: string }
   if (email) {
     check(await supabase.from('restaurant_members').insert({ restaurant_id: created.id, email, role: 'owner' }))
   }
+  if (input.planId) await assignPlan(created.id, input.planId)
+}
+
+/** Asigna (o quita, con null) el plan de un restaurante sin tocar su precio especial ni notas. */
+export async function assignPlan(restaurantId: string, planId: string | null): Promise<void> {
+  if (!supabase) {
+    return writeDB((db) => {
+      db.billing ??= []
+      const b = db.billing.find((x) => x.restaurant_id === restaurantId)
+      if (b) b.plan_id = planId
+      else db.billing.push({ restaurant_id: restaurantId, plan_id: planId, plan_price: null, plan_currency: 'CRC', note: null })
+    })
+  }
+  check(
+    await supabase
+      .from('restaurant_billing')
+      .upsert({ restaurant_id: restaurantId, plan_id: planId, updated_at: new Date().toISOString() }, { onConflict: 'restaurant_id' }),
+  )
 }
 
 export async function deleteRestaurant(id: string): Promise<void> {

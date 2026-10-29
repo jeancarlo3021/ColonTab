@@ -308,3 +308,7 @@
 .tier-chip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-weight: 600; font-size: 0.85rem; }
 .tier-chip.on { background: var(--navy); color: var(--green); border-color: var(--navy); }
 .cell-stack.right { align-items: flex-end; }
+.plan-select { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-weight: 600; max-width: 220px; }
+.plan-members { display: flex; flex-direction: column; gap: 6px; }
+.plan-member { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 10px; background: var(--bg); font-size: 0.9rem; }
+.link-btn { color: var(--danger); font-weight: 600; font-size: 0.85rem; }

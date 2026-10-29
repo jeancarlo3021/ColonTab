@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { createRestaurant, deleteRestaurant, listAllRestaurants, slugify, updateRestaurant } from '../lib/adminApi'
+import { assignPlan, createRestaurant, deleteRestaurant, listAllRestaurants, listPlans, slugify, updateRestaurant } from '../lib/adminApi'
 import { resetDemo } from '../lib/demoStore'
 import { isDemo } from '../lib/supabase'
 import { errorText, useData } from '../lib/useData'
@@ -13,10 +13,13 @@ import { SalesPanel } from './SalesPanel'
 import { ProductsPanel } from './ProductsPanel'
 import { PlansPanel } from './PlansPanel'
 import { serviceStatus, STATE_LABEL } from '../lib/billing'
-import type { RestaurantSummary } from '../types'
+import type { Plan, RestaurantSummary } from '../types'
+import { PlanSelect } from './PlanSelect'
+import { money } from '../lib/format'
 
 export function PlatformAdmin() {
   const { data, error, reload } = useData(listAllRestaurants, [])
+  const plans = useData(listPlans, [])
   const [creating, setCreating] = useState(false)
   const [view, setView] = useState<'restaurants' | 'billing' | 'sales' | 'products' | 'plans'>('restaurants')
   const [query, setQuery] = useState('')
@@ -41,7 +44,19 @@ export function PlatformAdmin() {
       <AdminHeader title="Plataforma ColonTab" subtitle="Administración de todos los restaurantes" back="/admin" />
       <main className="admin-main stack-lg">
         <div className="segmented view-switch">
-          <button className={view === 'restaurants' ? 'active' : ''} onClick={() => setView('restaurants')}>🏢 Restaurantes</button>
+          <button
+            className={view === 'restaurants' ? 'active' : ''}
+            onClick={() => {
+              // Al volver, recargar: en las otras pestañas pudieron cambiar planes o fechas
+              if (view !== 'restaurants') {
+                reload()
+                plans.reload()
+              }
+              setView('restaurants')
+            }}
+          >
+            🏢 Restaurantes
+          </button>
           <button className={view === 'billing' ? 'active' : ''} onClick={() => setView('billing')}>💳 Cobros</button>
           <button className={view === 'sales' ? 'active' : ''} onClick={() => setView('sales')}>🧾 Ventas</button>
           <button className={view === 'products' ? 'active' : ''} onClick={() => setView('products')}>📦 Artículos</button>
@@ -68,6 +83,7 @@ export function PlatformAdmin() {
                 <tr>
                   <th>Restaurante</th>
                   <th>Dueño</th>
+                  <th>Plan</th>
                   <th>Mesas</th>
                   <th>Llamadas</th>
                   <th>Estado</th>
@@ -80,6 +96,8 @@ export function PlatformAdmin() {
                   <Row
                     key={r.id}
                     r={r}
+                    plans={plans.data ?? []}
+                    onPlan={(planId) => void run(() => assignPlan(r.id, planId))}
                     onToggle={() => void run(() => updateRestaurant(r.id, { active: !r.active }))}
                     onDelete={() => {
                       const typed = prompt(`Esto borra "${r.name}" con su menú y pedidos.\nEscribe "${r.slug}" para confirmar:`)
@@ -88,7 +106,7 @@ export function PlatformAdmin() {
                   />
                 ))}
                 {list.length === 0 && (
-                  <tr><td colSpan={7} className="muted center-text">No hay restaurantes.</td></tr>
+                  <tr><td colSpan={8} className="muted center-text">No hay restaurantes.</td></tr>
                 )}
               </tbody>
             </table>
@@ -109,6 +127,7 @@ export function PlatformAdmin() {
       {creating && (
         <CreateRestaurant
           existingSlugs={(data ?? []).map((r) => r.slug)}
+          plans={plans.data ?? []}
           onClose={() => setCreating(false)}
           onCreated={() => {
             setCreating(false)
@@ -120,7 +139,7 @@ export function PlatformAdmin() {
   )
 }
 
-function Row({ r, onToggle, onDelete }: { r: RestaurantSummary; onToggle: () => void; onDelete: () => void }) {
+function Row({ r, plans, onPlan, onToggle, onDelete }: { r: RestaurantSummary; plans: Plan[]; onPlan: (planId: string | null) => void; onToggle: () => void; onDelete: () => void }) {
   return (
     <tr>
       <td>
@@ -133,6 +152,9 @@ function Row({ r, onToggle, onDelete }: { r: RestaurantSummary; onToggle: () => 
         </div>
       </td>
       <td>{r.owner_email ?? <span className="muted">Sin dueño</span>}</td>
+      <td>
+        <PlanSelect plans={plans} value={r.billing?.plan_id ?? null} onChange={onPlan} />
+      </td>
       <td>{r.table_count}</td>
       <td>{r.request_count}</td>
       <td>
@@ -165,10 +187,11 @@ function uniqueSlug(name: string, taken: string[]): string {
   return slug
 }
 
-function CreateRestaurant(props: { existingSlugs: string[]; onClose: () => void; onCreated: () => void }) {
+function CreateRestaurant(props: { existingSlugs: string[]; plans: Plan[]; onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState('')
   const [ownerEmail, setOwnerEmail] = useState('')
   const [tables, setTables] = useState(10)
+  const [planId, setPlanId] = useState<string>(props.plans.find((p) => p.active)?.id ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -179,7 +202,7 @@ function CreateRestaurant(props: { existingSlugs: string[]; onClose: () => void;
     setBusy(true)
     setError(null)
     try {
-      await createRestaurant({ name: name.trim(), slug, ownerEmail, primaryColor: GREEN, tableCount: tables })
+      await createRestaurant({ name: name.trim(), slug, ownerEmail, primaryColor: GREEN, tableCount: tables, planId: planId || null })
       props.onCreated()
     } catch (err) {
       setError(errorText(err))
@@ -201,9 +224,19 @@ function CreateRestaurant(props: { existingSlugs: string[]; onClose: () => void;
         <label className="field"><span>Cantidad de mesas</span>
           <input type="number" required min={1} max={500} value={tables} onChange={(e) => setTables(Number(e.target.value))} />
         </label>
+        <label className="field"><span>Plan</span>
+          <select value={planId} onChange={(e) => setPlanId(e.target.value)}>
+            <option value="">Sin plan (asignar después)</option>
+            {props.plans.filter((p) => p.active).map((p) => (
+              <option key={p.id} value={p.id}>{p.name} · {money(p.price, p.currency)} / {p.months === 12 ? 'año' : `${p.months} meses`}</option>
+            ))}
+          </select>
+          {props.plans.length === 0 && <small className="muted">Crea tus planes en la pestaña ⭐ Planes.</small>}
+        </label>
         {error && <p className="error">{error}</p>}
         <button className="btn btn-primary" disabled={busy || !name.trim()}>{busy ? 'Creando…' : 'Crear restaurante'}</button>
       </form>
     </Modal>
   )
 }
+

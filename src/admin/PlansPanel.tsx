@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { deletePlan, listAllRestaurants, listPlans, savePlan } from '../lib/adminApi'
+import { assignPlan, deletePlan, listAllRestaurants, listPlans, savePlan } from '../lib/adminApi'
 import { money } from '../lib/format'
 import { errorText, useData } from '../lib/useData'
 import { Modal } from '../components/Modal'
@@ -12,7 +12,19 @@ export function PlansPanel() {
   const plans = useData(listPlans, [])
   const restaurants = useData(listAllRestaurants, [])
   const [draft, setDraft] = useState<Draft | null>(null)
-  const usage = (id: string) => (restaurants.data ?? []).filter((r) => r.billing?.plan_id === id).length
+  const [error, setError] = useState<string | null>(null)
+  const on = (id: string) => (restaurants.data ?? []).filter((r) => r.billing?.plan_id === id)
+  const usage = (id: string) => on(id).length
+
+  async function assign(restaurantId: string, planId: string | null) {
+    setError(null)
+    try {
+      await assignPlan(restaurantId, planId)
+      restaurants.reload()
+    } catch (e) {
+      setError(errorText(e))
+    }
+  }
 
   return (
     <div className="stack-lg">
@@ -24,6 +36,7 @@ export function PlansPanel() {
       </div>
       {plans.error && <p className="error">{plans.error}. Si aún no lo hiciste, ejecuta <code>supabase/migrations/010_articulos_ventas_planes.sql</code>.</p>}
       {plans.data?.length === 0 && <p className="muted">Todavía no hay planes.</p>}
+      {error && <p className="error">No se pudo asignar el plan: {error}</p>}
       <div className="product-grid">
         {plans.data?.map((p) => (
           <article key={p.id} className={`panel plan-card ${p.active ? '' : 'off'}`}>
@@ -36,7 +49,28 @@ export function PlansPanel() {
               <span className="muted">/ {p.months === 12 ? 'año' : `${p.months} meses`}</span>
             </div>
             {p.description && <p className="muted small-text">{p.description}</p>}
-            <small className="muted">{usage(p.id)} {usage(p.id) === 1 ? 'restaurante' : 'restaurantes'} con este plan</small>
+            <div className="plan-members">
+              <small className="muted">{usage(p.id)} {usage(p.id) === 1 ? 'restaurante' : 'restaurantes'} con este plan</small>
+              {on(p.id).map((r) => (
+                <div key={r.id} className="plan-member">
+                  <span>{r.name}</span>
+                  <button className="link-btn" onClick={() => void assign(r.id, null)} title="Quitar de este plan">Quitar</button>
+                </div>
+              ))}
+              {(restaurants.data ?? []).some((r) => r.billing?.plan_id !== p.id) && p.active && (
+                <select
+                  className="plan-select"
+                  value=""
+                  onChange={(e) => e.target.value && void assign(e.target.value, p.id)}
+                  aria-label={`Asignar el plan ${p.name} a un restaurante`}
+                >
+                  <option value="">+ Asignar a un restaurante…</option>
+                  {(restaurants.data ?? []).filter((r) => r.billing?.plan_id !== p.id).map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}{r.billing?.plan ? ` (ahora: ${r.billing.plan.name})` : ''}</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <button className="btn btn-ghost small" onClick={() => setDraft({ ...p })}>Editar</button>
           </article>
         ))}

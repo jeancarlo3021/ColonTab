@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { deletePayment, listAllRestaurants, listPayments, listPlans, registerPayment, saveBilling, setPaidUntil } from '../lib/adminApi'
+import { assignPlan, deletePayment, listAllRestaurants, listPayments, listPlans, registerPayment, saveBilling, setPaidUntil } from '../lib/adminApi'
+import { PlanSelect } from './PlanSelect'
 import {
   ALERT_DAYS, crToday, daysText, effectivePlanPrice, formatDate, nextPeriodStart, periodEnd, serviceStatus, STATE_LABEL, type ServiceState,
 } from '../lib/billing'
@@ -27,6 +28,8 @@ function reminderText(r: RestaurantSummary) {
 export function BillingPanel() {
   const restaurants = useData(listAllRestaurants, [])
   const payments = useData(() => listPayments(), [])
+  const plans = useData(listPlans, [])
+  const [planError, setPlanError] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('all')
   const [paying, setPaying] = useState<RestaurantSummary | null>(null)
   const [editing, setEditing] = useState<RestaurantSummary | null>(null)
@@ -74,6 +77,7 @@ export function BillingPanel() {
       </div>
 
       {restaurants.error && <p className="error">{restaurants.error}</p>}
+      {planError && <p className="error">No se pudo asignar el plan: {planError}</p>}
       {payments.error && (
         <p className="error">No se pudieron cargar los pagos. Ejecuta <code>supabase/migrations/009_cobro_anual.sql</code> en Supabase.</p>
       )}
@@ -103,8 +107,15 @@ export function BillingPanel() {
                     const eff = effectivePlanPrice(r.billing)
                     return (
                       <div className="cell-stack">
-                        <span>{r.billing?.plan?.name ?? (eff ? 'Precio especial' : <span className="muted">Sin plan</span>)}</span>
-                        {eff && <small className="muted">{money(eff.price, eff.currency)}{r.billing?.plan_price != null && r.billing?.plan ? ' (especial)' : ''}</small>}
+                        <PlanSelect
+                          plans={plans.data ?? []}
+                          value={r.billing?.plan_id ?? null}
+                          onChange={(planId) => {
+                            setPlanError(null)
+                            void assignPlan(r.id, planId).then(reload).catch((e) => setPlanError(errorText(e)))
+                          }}
+                        />
+                        {eff && <small className="muted">{money(eff.price, eff.currency)}{r.billing?.plan_price != null ? ' (precio especial)' : ''}</small>}
                       </div>
                     )
                   })()}
