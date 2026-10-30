@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { DEMO_EVENT, demoTables, emptyRestaurant, newToken, readDB, uid, wait, writeDB } from './demoStore'
 import type {
   Member, MemberRole, MenuCategory, MenuItem, Restaurant, RestaurantSummary,
-  Plan, Product, ProductSale, RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, TableToken, Visit,
+  Plan, Product, ProductSale, Purchase, RestaurantBilling, ServiceRequest, SubscriptionPayment, Suggestion, TableToken, Visit,
 } from '../types'
 import { nextPeriodStart, periodEnd } from './billing'
 
@@ -485,6 +485,7 @@ export async function deletePlan(id: string): Promise<void> {
 // ───────── Artículos (catálogo universal) ─────────
 const normProduct = (p: Product): Product => ({
   ...p,
+  cost: Number(p.cost ?? 0),
   tiers: (p.tiers ?? []).map((t) => ({ min: Number(t.min), price: Number(t.price) })).sort((a, b) => a.min - b.min),
 })
 
@@ -523,7 +524,7 @@ export async function deleteProduct(id: string): Promise<void> {
 }
 
 // ───────── Ventas ─────────
-const normSale = (s: ProductSale): ProductSale => ({ ...s, unit_price: Number(s.unit_price), total: Number(s.total) })
+const normSale = (s: ProductSale): ProductSale => ({ ...s, unit_price: Number(s.unit_price), unit_cost: Number(s.unit_cost ?? 0), total: Number(s.total) })
 
 export async function listSales(restaurantId?: string): Promise<ProductSale[]> {
   if (!supabase) {
@@ -534,6 +535,18 @@ export async function listSales(restaurantId?: string): Promise<ProductSale[]> {
   let q = supabase.from('product_sales').select('*').order('sold_at', { ascending: false }).order('created_at', { ascending: false }).limit(5000)
   if (restaurantId) q = q.eq('restaurant_id', restaurantId)
   return (check(await q) as ProductSale[]).map(normSale)
+}
+
+/** Compras de un restaurante, para su propio panel (sin tu costo). */
+export async function listPurchases(restaurantId: string): Promise<Purchase[]> {
+  if (!supabase) {
+    return (await listSales(restaurantId)).map(({ id, product_name, quantity, unit_price, total, currency, sold_at, paid }) => ({
+      id, product_name, quantity, unit_price, total, currency, sold_at, paid,
+    }))
+  }
+  const { data, error } = await supabase.rpc('my_purchases', { p_restaurant_id: restaurantId })
+  if (error) throw new Error(error.message)
+  return (data as Purchase[]).map((p) => ({ ...p, unit_price: Number(p.unit_price), total: Number(p.total) }))
 }
 
 export type NewSale = Omit<ProductSale, 'id' | 'created_at'>

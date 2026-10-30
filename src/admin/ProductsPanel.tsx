@@ -23,7 +23,7 @@ export function ProductsPanel() {
         <button
           className="btn btn-primary small"
           onClick={() =>
-            setDraft({ name: '', description: '', currency: 'CRC', active: true, tiers: DEFAULT_MINS.map((min) => ({ min, price: 0 })) })
+            setDraft({ name: '', description: '', currency: 'CRC', cost: 0, active: true, tiers: DEFAULT_MINS.map((min) => ({ min, price: 0 })) })
           }
         >
           + Nuevo artículo
@@ -39,14 +39,28 @@ export function ProductsPanel() {
               {!p.active && <span className="tag">Oculto</span>}
             </div>
             {p.description && <p className="muted small-text">{p.description}</p>}
+            <div className="cost-line">
+              <span>Costo</span>
+              <b>{money(p.cost, p.currency)} <small className="muted">c/u</small></b>
+            </div>
             <table className="tier-table">
+              <thead>
+                <tr><th>Cantidad</th><th>Precio c/u</th><th>Ganas c/u</th></tr>
+              </thead>
               <tbody>
-                {p.tiers.map((t, i) => (
-                  <tr key={t.min}>
-                    <td>{i === 0 ? '1 unidad' : `Desde ${t.min}`}</td>
-                    <td>{money(t.price, p.currency)} <small className="muted">c/u</small></td>
-                  </tr>
-                ))}
+                {p.tiers.map((t, i) => {
+                  const gain = t.price - p.cost
+                  return (
+                    <tr key={t.min}>
+                      <td>{i === 0 ? '1 unidad' : `Desde ${t.min}`}</td>
+                      <td>{money(t.price, p.currency)}</td>
+                      <td className={gain < 0 ? 'loss' : 'gain'}>
+                        {money(gain, p.currency)}
+                        {t.price > 0 && <small> {Math.round((gain / t.price) * 100)}%</small>}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
             <button className="btn btn-ghost small" onClick={() => setDraft({ ...p, tiers: p.tiers.map((t) => ({ ...t })) })}>Editar</button>
@@ -103,12 +117,18 @@ function ProductEditor({ draft, onClose, onSaved }: { draft: Draft; onClose: () 
         <label className="field"><span>Descripción (opcional)</span>
           <input value={d.description ?? ''} onChange={(e) => setD({ ...d, description: e.target.value })} placeholder="Acrílico, 10×10 cm" />
         </label>
-        <label className="field"><span>Moneda</span>
-          <select value={d.currency} onChange={(e) => setD({ ...d, currency: e.target.value })}>
-            <option value="CRC">₡ Colones</option>
-            <option value="USD">$ Dólares</option>
-          </select>
-        </label>
+        <div className="field-row">
+          <label className="field"><span>Costo por unidad</span>
+            <input type="number" min={0} step="0.01" required value={d.cost} onChange={(e) => setD({ ...d, cost: Number(e.target.value) })} />
+            <small className="muted">Lo que te cuesta a ti. Solo lo ves tú.</small>
+          </label>
+          <label className="field"><span>Moneda</span>
+            <select value={d.currency} onChange={(e) => setD({ ...d, currency: e.target.value })}>
+              <option value="CRC">₡ Colones</option>
+              <option value="USD">$ Dólares</option>
+            </select>
+          </label>
+        </div>
         <div className="tier-editor">
           <span className="field-label">Precios por cantidad (precio de cada unidad)</span>
           {rows.map((r, i) => (
@@ -121,6 +141,9 @@ function ProductEditor({ draft, onClose, onSaved }: { draft: Draft; onClose: () 
               )}
               <span className="muted">{i === 0 ? '' : 'unidades'}</span>
               <input type="number" min={0} step="0.01" inputMode="decimal" placeholder="Precio c/u" required={i === 0} value={r.price} onChange={(e) => setRow(i, 'price', e.target.value)} aria-label={`Precio ${i + 1}`} />
+              <small className={`tier-gain ${r.price !== '' && Number(r.price) < d.cost ? 'loss' : ''}`}>
+                {r.price !== '' ? `ganas ${money(Number(r.price) - d.cost, d.currency)}` : ''}
+              </small>
             </div>
           ))}
           <small className="muted">Deja vacías las filas que no uses.</small>

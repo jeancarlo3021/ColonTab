@@ -155,6 +155,8 @@ export interface Product {
   name: string
   description: string | null
   currency: string
+  /** Lo que te cuesta cada unidad (privado) */
+  cost: number
   tiers: PriceTier[]
   active: boolean
 }
@@ -167,6 +169,8 @@ export interface ProductSale {
   product_name: string
   quantity: number
   unit_price: number
+  /** Costo por unidad al momento de vender (privado) */
+  unit_cost: number
   total: number
   currency: string
   sold_at: string
@@ -174,6 +178,9 @@ export interface ProductSale {
   note: string | null
   created_at: string
 }
+
+/** Lo que ve el restaurante de sus compras (sin costo) */
+export type Purchase = Pick<ProductSale, 'id' | 'product_name' | 'quantity' | 'unit_price' | 'total' | 'currency' | 'sold_at' | 'paid'>
 
 export interface SubscriptionPayment {
   id: string

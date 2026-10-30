@@ -312,3 +312,13 @@
 .plan-members { display: flex; flex-direction: column; gap: 6px; }
 .plan-member { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 10px; background: var(--bg); font-size: 0.9rem; }
 .link-btn { color: var(--danger); font-weight: 600; font-size: 0.85rem; }
+.cost-line { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 10px; background: var(--bg); font-size: 0.9rem; }
+.tier-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 4px 0; }
+.tier-table th:not(:first-child), .tier-table td:not(:first-child) { text-align: right; }
+.tier-table td:nth-child(2) { font-weight: 700; }
+.gain { color: var(--brand-dark); font-weight: 700; }
+.loss { color: var(--danger); font-weight: 700; }
+.tier-row { grid-template-columns: 72px 90px 70px 1fr 110px; }
+.tier-gain { color: var(--brand-dark); font-weight: 600; white-space: nowrap; }
+.tier-gain.loss { color: var(--danger); }
+@media (max-width: 640px) { .tier-row { grid-template-columns: 60px 70px 60px 1fr; } .tier-gain { grid-column: 1 / -1; text-align: right; } }

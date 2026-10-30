@@ -9,9 +9,11 @@ import type { Product, ProductSale, RestaurantSummary } from '../types'
 
 type Period = 'month' | 'year' | 'all'
 
-function sumBy(list: ProductSale[]) {
+const profitOf = (s: ProductSale) => s.total - s.unit_cost * s.quantity
+
+function sumBy(list: ProductSale[], value: (s: ProductSale) => number = (s) => s.total) {
   const m = new Map<string, number>()
-  for (const s of list) m.set(s.currency, (m.get(s.currency) ?? 0) + s.total)
+  for (const s of list) m.set(s.currency, (m.get(s.currency) ?? 0) + value(s))
   return [...m.entries()].map(([c, v]) => money(v, c)).join(' + ') || money(0, 'CRC')
 }
 
@@ -55,8 +57,8 @@ export function SalesPanel() {
     <div className="stack-lg">
       <div className="stats">
         <Stat label={period === 'month' ? 'Vendido este mes' : period === 'year' ? `Vendido en ${today.slice(0, 4)}` : 'Vendido en total'} value={sumBy(list)} />
+        <Stat label="Ganancia" value={sumBy(list, profitOf)} />
         <Stat label="Unidades" value={String(units)} />
-        <Stat label="Ventas" value={String(list.length)} />
         <Stat label="Por cobrar" value={sumBy(pending)} highlight={pending.length > 0} />
       </div>
 
@@ -82,7 +84,7 @@ export function SalesPanel() {
       <div className="panel table-wrap">
         <table className="data-table">
           <thead>
-            <tr><th>Fecha</th><th>Cliente</th><th>Artículo</th><th>Cant.</th><th>Precio c/u</th><th>Total</th><th>Pago</th><th /></tr>
+            <tr><th>Fecha</th><th>Cliente</th><th>Artículo</th><th>Cant.</th><th>Precio c/u</th><th>Total</th><th>Ganancia</th><th>Pago</th><th /></tr>
           </thead>
           <tbody>
             {list.map((s) => (
@@ -99,6 +101,12 @@ export function SalesPanel() {
                 <td>{money(s.unit_price, s.currency)}</td>
                 <td><strong>{money(s.total, s.currency)}</strong></td>
                 <td>
+                  <div className="cell-stack">
+                    <span className={profitOf(s) < 0 ? 'loss' : 'gain'}>{money(profitOf(s), s.currency)}</span>
+                    <small className="muted">costo {money(s.unit_cost, s.currency)} c/u</small>
+                  </div>
+                </td>
+                <td>
                   <button className={`tag ${s.paid ? 'tag-on' : 'state-soon'}`} onClick={() => void run(() => setSalePaid(s.id, !s.paid))} title="Cambiar">
                     {s.paid ? 'Pagado' : 'Pendiente'}
                   </button>
@@ -108,7 +116,7 @@ export function SalesPanel() {
                 </td>
               </tr>
             ))}
-            {list.length === 0 && <tr><td colSpan={8} className="muted center-text">Sin ventas en este periodo.</td></tr>}
+            {list.length === 0 && <tr><td colSpan={9} className="muted center-text">Sin ventas en este periodo.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -131,6 +139,7 @@ function SaleModal(props: { products: Product[]; restaurants: RestaurantSummary[
   const [productId, setProductId] = useState(props.products[0]?.id ?? '')
   const [qty, setQty] = useState(1)
   const [custom, setCustom] = useState<string>('')
+  const [costCustom, setCostCustom] = useState<string>('')
   const [date, setDate] = useState(crToday())
   const [paid, setPaid] = useState(true)
   const [note, setNote] = useState('')
@@ -141,6 +150,8 @@ function SaleModal(props: { products: Product[]; restaurants: RestaurantSummary[
   const tier = product ? tierFor(product.tiers, qty) : null
   const unit = custom !== '' ? Number(custom) : tier?.price ?? 0
   const total = Math.round(unit * qty * 100) / 100
+  const unitCost = costCustom !== '' ? Number(costCustom) : product?.cost ?? 0
+  const profit = Math.round((total - unitCost * qty) * 100) / 100
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -155,6 +166,7 @@ function SaleModal(props: { products: Product[]; restaurants: RestaurantSummary[
         product_name: product.name,
         quantity: qty,
         unit_price: unit,
+        unit_cost: unitCost,
         total,
         currency: product.currency,
         sold_at: date,
@@ -183,7 +195,7 @@ function SaleModal(props: { products: Product[]; restaurants: RestaurantSummary[
           </label>
         )}
         <label className="field"><span>Artículo</span>
-          <select value={productId} onChange={(e) => { setProductId(e.target.value); setCustom('') }}>
+          <select value={productId} onChange={(e) => { setProductId(e.target.value); setCustom(''); setCostCustom('') }}>
             {props.products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </label>
@@ -208,15 +220,19 @@ function SaleModal(props: { products: Product[]; restaurants: RestaurantSummary[
           <label className="field"><span>Precio c/u</span>
             <input type="number" min={0} step="0.01" value={custom !== '' ? custom : tier?.price ?? 0} onChange={(e) => setCustom(e.target.value)} />
           </label>
-          <label className="field"><span>Fecha</span>
-            <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+          <label className="field"><span>Costo c/u</span>
+            <input type="number" min={0} step="0.01" value={costCustom !== '' ? costCustom : product?.cost ?? 0} onChange={(e) => setCostCustom(e.target.value)} />
           </label>
         </div>
+        <label className="field"><span>Fecha</span>
+          <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
         <p className="note">
           {product && (custom === ''
             ? <>Precio aplicado: <b>{tier!.min === 1 ? '1 unidad' : `desde ${tier!.min}`}</b> → {money(tier!.price, product.currency)} c/u.</>
             : <>Precio cambiado a mano.</>)}{' '}
           Total: <b>{product ? money(total, product.currency) : '—'}</b>
+          {product && <> · Ganancia: <b className={profit < 0 ? 'loss' : 'gain'}>{money(profit, product.currency)}</b></>}
         </p>
         <label className="field"><span>Nota (opcional)</span>
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Factura, mesas 1–12…" />

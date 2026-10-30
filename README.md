@@ -46,6 +46,11 @@ npm run dev
 
 Sin variables de entorno funciona en **modo demo** con datos de ejemplo.
 
+## Poner la base de datos al día
+
+[`supabase/schema.sql`](supabase/schema.sql) incluye todas las migraciones y se puede ejecutar completo cuando quieras:
+crea lo que falte sin borrar datos. Si ves errores como *"Could not find the 'sinpe_phone' column"*, ejecútalo completo.
+
 ## Conectar Supabase
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
@@ -89,7 +94,9 @@ En **tu panel → Plataforma** hay cinco secciones: Restaurantes, Cobros, **Vent
   El restaurante ve sus compras en su pestaña **Servicio**.
 - **Planes**: nombre, precio, moneda y meses. Se asignan en **Cobros → Editar**; al registrar un pago se usa el
   precio del plan (o un precio especial para ese restaurante).
-- Requiere [`supabase/migrations/010_articulos_ventas_planes.sql`](supabase/migrations/010_articulos_ventas_planes.sql).
+- **Costo**: cada artículo tiene su costo por unidad; se ve la ganancia por precio, por venta y del periodo.
+  El costo es privado: el restaurante ve sus compras con `my_purchases`, sin costo.
+- Requiere [`010_articulos_ventas_planes.sql`](supabase/migrations/010_articulos_ventas_planes.sql) y [`011_costos.sql`](supabase/migrations/011_costos.sql).
 
 ## Notificaciones en pantalla
 

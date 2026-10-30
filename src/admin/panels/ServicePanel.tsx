@@ -1,4 +1,4 @@
-import { getBilling, listPayments, listSales } from '../../lib/adminApi'
+import { getBilling, listPayments, listPurchases } from '../../lib/adminApi'
 import { daysBetween, daysText, effectivePlanPrice, formatDate, serviceStatus, STATE_LABEL } from '../../lib/billing'
 import { money } from '../../lib/format'
 import { CONTACT_URL } from '../../lib/site'
@@ -16,7 +16,7 @@ export function ServicePanel({ restaurant }: { restaurant: Restaurant }) {
   const total = current ? daysBetween(current.period_start, current.period_end) + 1 : 365
   const pct = s.daysLeft === null ? 0 : Math.max(0, Math.min(100, (s.daysLeft / total) * 100))
   const eff = effectivePlanPrice(billing.data)
-  const purchases = useData(() => listSales(restaurant.id), [restaurant.id])
+  const purchases = useData(() => listPurchases(restaurant.id), [restaurant.id])
 
   return (
     <div className="stack-lg">

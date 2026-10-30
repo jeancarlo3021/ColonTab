@@ -107,18 +107,18 @@ function seed(): DemoDB {
     ],
     products: [
       {
-        id: 'prod-placa', name: 'Placa NFC + QR para mesa', description: 'Placa acrílica con etiqueta NFC y código QR', currency: 'CRC', active: true,
+        id: 'prod-placa', name: 'Placa NFC + QR para mesa', description: 'Placa acrílica con etiqueta NFC y código QR', currency: 'CRC', cost: 2500, active: true,
         tiers: [{ min: 1, price: 6000 }, { min: 10, price: 5000 }, { min: 25, price: 4500 }, { min: 50, price: 4000 }],
       },
       {
-        id: 'prod-sticker', name: 'Sticker QR', description: 'Sticker resistente al agua', currency: 'CRC', active: true,
+        id: 'prod-sticker', name: 'Sticker QR', description: 'Sticker resistente al agua', currency: 'CRC', cost: 400, active: true,
         tiers: [{ min: 1, price: 1500 }, { min: 10, price: 1200 }, { min: 25, price: 1000 }, { min: 50, price: 800 }],
       },
     ],
     sales: [
       {
         id: uid(), restaurant_id: r.id, customer_name: null, product_id: 'prod-placa', product_name: 'Placa NFC + QR para mesa',
-        quantity: 10, unit_price: 5000, total: 50000, currency: 'CRC', sold_at: addDays(crToday(), -160), paid: true, note: null,
+        quantity: 10, unit_price: 5000, unit_cost: 2500, total: 50000, currency: 'CRC', sold_at: addDays(crToday(), -160), paid: true, note: null,
         created_at: new Date().toISOString(),
       },
     ],

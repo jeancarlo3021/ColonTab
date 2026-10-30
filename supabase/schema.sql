@@ -1,6 +1,7 @@
 -- ColonTab — esquema de base de datos para Supabase
 -- Ejecuta este archivo completo en: Supabase → SQL Editor → New query → Run
--- Se puede volver a ejecutar sin perder datos.
+-- Se puede volver a ejecutar cuando quieras: crea lo que falte y pone tu base al día
+-- (incluye todas las migraciones de supabase/migrations) sin borrar tus datos.
 
 create extension if not exists "pgcrypto";
 
@@ -639,7 +640,30 @@ drop policy if exists "sales member read" on product_sales;
 create policy "sales member read" on product_sales for select to authenticated
   using (restaurant_id is not null and is_restaurant_member(restaurant_id));
 
+-- ═════════════════ Costos de artículos ═════════════════
+alter table products add column if not exists cost numeric(10,2) not null default 0 check (cost >= 0);
+alter table product_sales add column if not exists unit_cost numeric(10,2) not null default 0 check (unit_cost >= 0);
+
+-- El restaurante ya no lee la tabla de ventas directo (vería el costo): usa esta función
+drop policy if exists "sales member read" on product_sales;
+
+create or replace function my_purchases(p_restaurant_id uuid)
+returns table (id uuid, product_name text, quantity int, unit_price numeric, total numeric, currency text, sold_at date, paid boolean)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.product_name, s.quantity, s.unit_price, s.total, s.currency, s.sold_at, s.paid
+  from product_sales s
+  where s.restaurant_id = p_restaurant_id and is_restaurant_member(p_restaurant_id)
+  order by s.sold_at desc, s.created_at desc
+$$;
+grant execute on function my_purchases(uuid) to authenticated;
+
+-- Seguridad: la primera versión de schema.sql agregaba este correo de ejemplo como administrador
+delete from platform_admins where lower(email) = 'tu-email@ejemplo.com';
+
+-- ═════════════════ Quitar el código público "demo" (migración 008) ═════════════════
+update restaurant_tables set token = new_table_token() where token = 'demo';
+
 -- ═════════════════ TU CUENTA DE ADMINISTRADOR ═════════════════
--- Cambia el email por el tuyo y vuelve a ejecutar esta línea.
--- Después regístrate en /admin/login con ese mismo email.
-insert into platform_admins (email) values (lower('TU-EMAIL@ejemplo.com')) on conflict do nothing;
+-- Para darte acceso de administrador de la plataforma, ejecuta aparte (con tu correo):
+--   insert into platform_admins (email) values (lower('tucorreo@dominio.com')) on conflict do nothing;
+-- Después regístrate en /admin/login con ese mismo correo.
