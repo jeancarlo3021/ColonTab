@@ -52,6 +52,8 @@ export function FilamentPanel() {
         </div>
       )}
 
+      {data && <StockPanel bobinas={activas.filter((b) => !b.ranura)} onAgregar={() => setDraft(nuevo({ notas: 'Stock (sellada)' }))} />}
+
       <div className="row-between">
         <input className="search" placeholder="Buscar por color, material, marca o código…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <div className="order-actions">
@@ -127,6 +129,46 @@ export function FilamentPanel() {
         </Modal>
       )}
     </div>
+  )
+}
+
+/** Filamento guardado (no puesto en una impresora), agrupado por material y color. */
+function StockPanel({ bobinas, onAgregar }: { bobinas: Bobina[]; onAgregar: () => void }) {
+  const grupos = new Map<string, Bobina[]>()
+  for (const b of bobinas) {
+    const k = `${b.material}|${b.color.trim().toLowerCase()}`
+    grupos.set(k, [...(grupos.get(k) ?? []), b])
+  }
+  const lista = [...grupos.values()].sort((a, b) => `${a[0].material}${a[0].color}`.localeCompare(`${b[0].material}${b[0].color}`))
+  return (
+    <section className="panel stack-lg">
+      <div className="row-between">
+        <h3>📦 Stock guardado <small className="muted">({bobinas.length} bobinas · {(bobinas.reduce((s, b) => s + Math.max(0, b.restante_g), 0) / 1000).toFixed(1)} kg)</small></h3>
+        <button className="btn btn-ghost small" onClick={onAgregar}>+ Agregar al stock</button>
+      </div>
+      {lista.length === 0 && <p className="muted">No tienes filamento guardado. Agrega las bobinas que tienes sin usar.</p>}
+      <div className="fil-stock">
+        {lista.map((bs) => {
+          const sinAbrir = bs.filter((b) => b.restante_g >= b.peso_g - 1).length
+          return (
+            <div key={bs[0].id} className="fil-stock-item">
+              <span className="swatch big" style={{ background: bs.find((b) => b.color_hex)?.color_hex ?? '#ccc' }} />
+              <div>
+                <strong>{bs[0].material} {bs[0].color}</strong>
+                <small className="muted">
+                  {bs.length} bobina{bs.length === 1 ? '' : 's'} · {grams(bs.reduce((s, b) => s + Math.max(0, b.restante_g), 0))}
+                  {sinAbrir ? ` · ${sinAbrir} sin abrir` : ''}
+                </small>
+                <div className="fil-stock-ids">
+                  {bs.map((b) => <Link key={b.id} to={`/f/${b.id}`}>#{b.id}</Link>)}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <small className="muted">Cuando metes una bobina guardada en el CFS, el bot la reconoce sola por el color y material.</small>
+    </section>
   )
 }
 
@@ -209,6 +251,7 @@ export function SpoolEditor({ draft, impresoras, onClose, onSaved }: {
   draft: Draft; impresoras: Impresora[]; onClose: () => void; onSaved: (id: string, isNew: boolean) => void
 }) {
   const [d, setD] = useState<Draft>(draft)
+  const [cantidad, setCantidad] = useState(1)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const slotValue = d.impresora_id && d.ranura ? `${d.impresora_id}:${d.ranura}` : ''
@@ -219,8 +262,13 @@ export function SpoolEditor({ draft, impresoras, onClose, onSaved }: {
     setError(null)
     try {
       const { id, material, color, color_hex, marca, peso_g, restante_g, notas, impresora_id, ranura } = d
-      const saved = await saveBobina({ id, material, color, color_hex, marca, peso_g, restante_g, notas, impresora_id: impresora_id ?? null, ranura: ranura ?? null })
-      onSaved(saved, !d.id)
+      const veces = !id && !ranura ? Math.max(1, Math.min(50, cantidad)) : 1
+      let saved = ''
+      for (let i = 0; i < veces; i++) {
+        const nuevoId = await saveBobina({ id, material, color, color_hex, marca, peso_g, restante_g, notas, impresora_id: impresora_id ?? null, ranura: ranura ?? null })
+        if (!saved) saved = nuevoId
+      }
+      onSaved(saved, !d.id && veces === 1)
     } catch (err) {
       setError(errorText(err))
       setBusy(false)
@@ -270,6 +318,12 @@ export function SpoolEditor({ draft, impresoras, onClose, onSaved }: {
             {impresoras.map((i) => SLOTS.map((s) => <option key={`${i.id}:${s}`} value={`${i.id}:${s}`}>{i.nombre} · ranura {s}</option>))}
           </select>
         </label>
+        {!d.id && !d.ranura && (
+          <label className="field"><span>Cantidad de bobinas iguales</span>
+            <input type="number" min={1} max={50} value={cantidad} onChange={(e) => setCantidad(Number(e.target.value))} />
+            <small className="muted">Para agregar varias bobinas selladas al stock de una vez.</small>
+          </label>
+        )}
         <label className="field"><span>Notas (opcional)</span>
           <input value={d.notas ?? ''} onChange={(e) => setD({ ...d, notas: e.target.value })} placeholder="Secada el 20/11, lote…" />
         </label>

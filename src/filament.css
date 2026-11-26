@@ -29,3 +29,7 @@
   .fil-slots { grid-template-columns: repeat(2, 1fr); }
   .fil-hero { flex-direction: column; align-items: flex-start; }
 }
+.fil-stock { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.fil-stock-item { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+.fil-stock-item small { display: block; }
+.fil-stock-ids { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-size: 0.78rem; }
