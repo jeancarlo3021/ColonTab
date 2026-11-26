@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { AdminHeader } from './AdminShell'
 import { errorText, useData } from '../lib/useData'
 import { nfcErrorText, nfcSupported, writeNfcUrl } from '../lib/nfc'
-import { SLOTS, colorName, deleteBobina, getBobina, grams, patchBobina, pct, spoolUrl, type Slot } from '../lib/filamentApi'
+import { SLOTS, codigoValido, colorName, deleteBobina, getBobina, grams, patchBobina, pct, spoolUrl, type Slot } from '../lib/filamentApi'
 import { SpoolEditor, ubicacion } from './FilamentPanel'
 
 /** Ficha de una bobina: lo que abre el sticker NFC (/f/<id>). */
@@ -11,6 +11,7 @@ export function FilamentSpool() {
   const { id = '' } = useParams()
   const { data, error, reload } = useData(() => getBobina(id), [id])
   const [editing, setEditing] = useState(false)
+  const [registrando, setRegistrando] = useState<false | 'uso' | 'stock' | null>(null)
   const [peso, setPeso] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -36,7 +37,17 @@ export function FilamentSpool() {
       <main className="admin-main stack-lg fil-spool">
         {error && <p className="error">{error}</p>}
         {!data && !error && <div className="spinner" />}
-        {data && !b && <p className="muted">No existe la bobina #{id}. <Link to="/admin/plataforma?v=filamento">Ver inventario</Link></p>}
+        {data && !b && (codigoValido(id) ? (
+          <section className="panel stack-lg">
+            <h2>🏷 Sticker nuevo #{id}</h2>
+            <p>Este sticker todavía no tiene bobina. ¿Qué quieres hacer?</p>
+            <div className="order-actions">
+              <button className="btn btn-primary" onClick={() => setRegistrando('stock')}>📦 Añadir al stock (guardada)</button>
+              <button className="btn btn-ghost" onClick={() => setRegistrando('uso')}>🖨 Registrarla en una impresora</button>
+            </div>
+            <Link className="muted small-text" to="/admin/plataforma?v=filamento">Ver inventario</Link>
+          </section>
+        ) : <p className="muted">No existe la bobina #{id}. <Link to="/admin/plataforma?v=filamento">Ver inventario</Link></p>)}
         {b && data && (
           <>
             <section className="panel fil-hero">
@@ -138,6 +149,16 @@ export function FilamentSpool() {
           </>
         )}
       </main>
+      {registrando && data && !b && (
+        <SpoolEditor
+          draft={{ nuevoId: id, material: 'PLA', color: '', color_hex: null, marca: '', peso_g: 1000, restante_g: 1000,
+            notas: registrando === 'stock' ? 'Stock (sellada)' : '',
+            impresora_id: registrando === 'uso' ? data.impresoras[0]?.id ?? null : null, ranura: registrando === 'uso' ? 'A' : null }}
+          impresoras={data.impresoras}
+          onClose={() => setRegistrando(null)}
+          onSaved={() => { setRegistrando(null); reload() }}
+        />
+      )}
       {editing && b && data && (
         <SpoolEditor draft={{ ...b }} impresoras={data.impresoras} onClose={() => setEditing(false)}
           onSaved={() => { setEditing(false); reload() }} />

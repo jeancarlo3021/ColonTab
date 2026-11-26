@@ -4,12 +4,12 @@ import { Modal } from '../components/Modal'
 import { Stat } from '../components/Stat'
 import { errorText, useData } from '../lib/useData'
 import {
-  MATERIALES, SLOTS, UMBRAL_G, colorName, grams, loadFilamento, pct, saveBobina, spoolUrl,
+  MATERIALES, SLOTS, UMBRAL_G, colorName, grams, loadFilamento, nuevoCodigo, pct, saveBobina, spoolUrl,
   type Bobina, type BobinaDraft, type Impresora, type Ranura, type Slot,
 } from '../lib/filamentApi'
 import { NfcSpoolWriter } from './FilamentSpool'
 
-type Draft = BobinaDraft & { id?: string }
+type Draft = BobinaDraft & { id?: string; nuevoId?: string }
 const nuevo = (over: Partial<Draft> = {}): Draft => ({
   material: 'PLA', color: '', color_hex: null, marca: '', peso_g: 1000, restante_g: 1000, notas: '',
   impresora_id: null, ranura: null, ...over,
@@ -20,6 +20,7 @@ export function FilamentPanel() {
   const { data, error, reload } = useData(loadFilamento, [])
   const [draft, setDraft] = useState<Draft | null>(null)
   const [creado, setCreado] = useState<string | null>(null)
+  const [sticker, setSticker] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [verAgotadas, setVerAgotadas] = useState(false)
 
@@ -61,6 +62,7 @@ export function FilamentPanel() {
             <input type="checkbox" checked={verAgotadas} onChange={(e) => setVerAgotadas(e.target.checked)} />
             <span>Ver agotadas</span>
           </label>
+          <button className="btn btn-ghost small" onClick={() => setSticker(nuevoCodigo())}>🏷 Sticker nuevo</button>
           <button className="btn btn-primary small" onClick={() => setDraft(nuevo())}>+ Nueva bobina</button>
         </div>
       </div>
@@ -118,6 +120,16 @@ export function FilamentPanel() {
             if (isNew) setCreado(id)
           }}
         />
+      )}
+      {sticker && (
+        <Modal title="🏷 Sticker nuevo" onClose={() => setSticker(null)}>
+          <div className="stack-lg">
+            <p>Graba este sticker y pégalo en una bobina. Cuando lo acerques al celular se abrirá directo el
+              formulario para <b>registrarla</b> (en uso o en stock).</p>
+            <NfcSpoolWriter id={sticker} />
+            <button className="btn btn-ghost" onClick={() => setSticker(nuevoCodigo())}>Grabar otro sticker</button>
+          </div>
+        </Modal>
       )}
       {creado && (
         <Modal title="Bobina registrada ✅" onClose={() => setCreado(null)}>
@@ -261,12 +273,12 @@ export function SpoolEditor({ draft, impresoras, onClose, onSaved }: {
     setBusy(true)
     setError(null)
     try {
-      const { id, material, color, color_hex, marca, peso_g, restante_g, notas, impresora_id, ranura } = d
+      const { id, nuevoId, material, color, color_hex, marca, peso_g, restante_g, notas, impresora_id, ranura } = d
       const veces = !id && !ranura ? Math.max(1, Math.min(50, cantidad)) : 1
       let saved = ''
       for (let i = 0; i < veces; i++) {
-        const nuevoId = await saveBobina({ id, material, color, color_hex, marca, peso_g, restante_g, notas, impresora_id: impresora_id ?? null, ranura: ranura ?? null })
-        if (!saved) saved = nuevoId
+        const creadoId = await saveBobina({ id, nuevoId: i === 0 ? nuevoId : undefined, material, color, color_hex, marca, peso_g, restante_g, notas, impresora_id: impresora_id ?? null, ranura: ranura ?? null })
+        if (!saved) saved = creadoId
       }
       onSaved(saved, !d.id && veces === 1)
     } catch (err) {
@@ -276,7 +288,7 @@ export function SpoolEditor({ draft, impresoras, onClose, onSaved }: {
   }
 
   return (
-    <Modal title={d.id ? `Editar bobina #${d.id}` : 'Nueva bobina'} onClose={onClose}>
+    <Modal title={d.id ? `Editar bobina #${d.id}` : d.nuevoId ? `Registrar bobina #${d.nuevoId}` : 'Nueva bobina'} onClose={onClose}>
       <form className="form" onSubmit={submit}>
         <div className="field-row">
           <label className="field"><span>Material</span>
@@ -318,7 +330,7 @@ export function SpoolEditor({ draft, impresoras, onClose, onSaved }: {
             {impresoras.map((i) => SLOTS.map((s) => <option key={`${i.id}:${s}`} value={`${i.id}:${s}`}>{i.nombre} · ranura {s}</option>))}
           </select>
         </label>
-        {!d.id && !d.ranura && (
+        {!d.id && !d.nuevoId && !d.ranura && (
           <label className="field"><span>Cantidad de bobinas iguales</span>
             <input type="number" min={1} max={50} value={cantidad} onChange={(e) => setCantidad(Number(e.target.value))} />
             <small className="muted">Para agregar varias bobinas selladas al stock de una vez.</small>

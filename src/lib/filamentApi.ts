@@ -93,11 +93,20 @@ export async function getBobina(id: string): Promise<{ bobina: Bobina | null; co
   return { bobina: bobina && num(bobina), consumos: check(c) as Consumo[], impresoras: check(i) as Impresora[] }
 }
 
-export async function saveBobina(d: BobinaDraft & { id?: string }): Promise<string> {
+export const nuevoCodigo = () => Math.random().toString(16).slice(2, 8)
+export const codigoValido = (id: string) => /^[a-z0-9]{4,12}$/.test(id)
+
+export async function saveBobina(d: BobinaDraft & { id?: string; nuevoId?: string }): Promise<string> {
   const s = db()
   if (!d.color.trim()) throw new Error('Escribe el color')
   if (!(d.peso_g > 0)) throw new Error('El peso debe ser mayor que 0')
-  const row = { ...d, color: d.color.trim(), marca: d.marca?.trim() || null, notas: d.notas?.trim() || null }
+  const { nuevoId, ...rest } = d
+  const row = { ...rest, color: d.color.trim(), marca: d.marca?.trim() || null, notas: d.notas?.trim() || null }
+  if (nuevoId) {
+    if (!codigoValido(nuevoId)) throw new Error('Código de sticker inválido')
+    check(await s.from('filamento_bobinas').insert({ ...row, id: nuevoId }))
+    return nuevoId
+  }
   if (d.id) {
     check(await s.from('filamento_bobinas').update(row).eq('id', d.id))
     return d.id
