@@ -1,0 +1,31 @@
+
+/* ═════════ Control de filamento ═════════ */
+.swatch { display: inline-block; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.swatch.big { width: 26px; height: 26px; }
+.swatch.huge { width: 88px; height: 88px; border-width: 4px; }
+.fil-printers { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.fil-printer { display: flex; flex-direction: column; gap: 10px; }
+.fil-printer h3 { font-size: 1.15rem; }
+.fil-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.fil-slot { border: 1px solid var(--line); border-radius: 14px; padding: 8px; display: flex; flex-direction: column; gap: 6px; min-height: 108px; }
+.fil-slot-head { display: flex; align-items: center; gap: 6px; }
+.fil-slot-body { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; color: inherit; text-decoration: none; }
+.fil-slot-body .btn { padding: 4px 8px; font-size: 0.75rem; }
+.fil-bar-wrap { display: flex; flex-direction: column; gap: 3px; }
+.fil-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.fil-bar > span { display: block; height: 100%; background: var(--green); border-radius: inherit; }
+.fil-bar.low > span { background: var(--warn); }
+.fil-bar.crit > span { background: var(--danger); }
+.fil-off { opacity: 0.55; }
+.fil-spool { max-width: 720px; }
+.fil-hero { display: flex; gap: 18px; align-items: center; }
+.fil-hero .fil-bar { height: 12px; }
+.fil-big { font-family: var(--font-title); font-size: 2.6rem; font-weight: 800; line-height: 1; }
+.fil-pick { display: flex; flex-direction: column; gap: 10px; }
+.fil-pick-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fil-pick-row .muted { min-width: 72px; }
+@media (max-width: 520px) {
+  .fil-printers { grid-template-columns: 1fr; }
+  .fil-slots { grid-template-columns: repeat(2, 1fr); }
+  .fil-hero { flex-direction: column; align-items: flex-start; }
+}

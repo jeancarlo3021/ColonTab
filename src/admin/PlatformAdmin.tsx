@@ -12,6 +12,7 @@ import { BillingPanel } from './BillingPanel'
 import { SalesPanel } from './SalesPanel'
 import { ProductsPanel } from './ProductsPanel'
 import { PlansPanel } from './PlansPanel'
+import { FilamentPanel } from './FilamentPanel'
 import { serviceStatus, STATE_LABEL } from '../lib/billing'
 import type { Plan, RestaurantSummary } from '../types'
 import { PlanSelect } from './PlanSelect'
@@ -21,7 +22,9 @@ export function PlatformAdmin() {
   const { data, error, reload } = useData(listAllRestaurants, [])
   const plans = useData(listPlans, [])
   const [creating, setCreating] = useState(false)
-  const [view, setView] = useState<'restaurants' | 'billing' | 'sales' | 'products' | 'plans'>('restaurants')
+  const [view, setView] = useState<'restaurants' | 'billing' | 'sales' | 'products' | 'plans' | 'filamento'>(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('v') === 'filamento' ? 'filamento' : 'restaurants',
+  )
   const [query, setQuery] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -61,8 +64,9 @@ export function PlatformAdmin() {
           <button className={view === 'sales' ? 'active' : ''} onClick={() => setView('sales')}>🧾 Ventas</button>
           <button className={view === 'products' ? 'active' : ''} onClick={() => setView('products')}>📦 Artículos</button>
           <button className={view === 'plans' ? 'active' : ''} onClick={() => setView('plans')}>⭐ Planes</button>
+          <button className={view === 'filamento' ? 'active' : ''} onClick={() => setView('filamento')}>🧵 Filamento</button>
         </div>
-        {view === 'billing' ? <BillingPanel /> : view === 'sales' ? <SalesPanel /> : view === 'products' ? <ProductsPanel /> : view === 'plans' ? <PlansPanel /> : <>
+        {view === 'filamento' ? <FilamentPanel /> : view === 'billing' ? <BillingPanel /> : view === 'sales' ? <SalesPanel /> : view === 'products' ? <ProductsPanel /> : view === 'plans' ? <PlansPanel /> : <>
         <div className="stats">
           <Stat label="Restaurantes" value={String(data?.length ?? '—')} />
           <Stat label="Activos" value={String(data?.filter((r) => r.active).length ?? '—')} />

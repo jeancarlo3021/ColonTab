@@ -5,6 +5,7 @@ import './index.css'
 import './admin.css'
 import './landing.css'
 import './client.css'
+import './filament.css'
 import { AuthProvider } from './lib/auth'
 import { Landing } from './pages/Landing'
 import { RestaurantLayout } from './pages/RestaurantLayout'
@@ -18,6 +19,7 @@ import { AdminLogin } from './admin/AdminLogin'
 import { AdminHome } from './admin/AdminHome'
 import { RestaurantAdmin } from './admin/RestaurantAdmin'
 import { PlatformAdmin } from './admin/PlatformAdmin'
+import { FilamentSpool } from './admin/FilamentSpool'
 
 const app = (
   <StrictMode>
@@ -42,6 +44,8 @@ const app = (
           <Route path="/admin" element={<RequireAuth><AdminHome /></RequireAuth>} />
           <Route path="/admin/r/:slug" element={<RequireAuth><RestaurantAdmin /></RequireAuth>} />
           <Route path="/admin/plataforma" element={<RequireAuth platform><PlatformAdmin /></RequireAuth>} />
+          {/* Sticker NFC de cada bobina de filamento (solo administrador) */}
+          <Route path="/f/:id" element={<RequireAuth platform><FilamentSpool /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>

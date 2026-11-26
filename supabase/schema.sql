@@ -667,3 +667,209 @@ update restaurant_tables set token = new_table_token() where token = 'demo';
 -- Para darte acceso de administrador de la plataforma, ejecuta aparte (con tu correo):
 --   insert into platform_admins (email) values (lower('tucorreo@dominio.com')) on conflict do nothing;
 -- Después regístrate en /admin/login con ese mismo correo.
+
+-- ═════════ 012: control de filamento ═════════
+-- ColonTab: control de filamento de las impresoras 3D (solo el administrador de la plataforma).
+-- El bot de filamento (en la PC del taller) escribe aquí con la llave de servicio; la web lee y edita.
+
+create table if not exists filamento_impresoras (
+  id text primary key,                 -- 'primera', 'segunda'
+  nombre text not null,
+  ip text,
+  estado text,                         -- 'printing', 'standby', 'complete'…
+  trabajo text,                        -- archivo que está imprimiendo
+  progreso numeric(5,2),
+  visto_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists filamento_ranuras (
+  impresora_id text not null references filamento_impresoras(id) on delete cascade,
+  ranura text not null check (ranura in ('A','B','C','D')),
+  color_hex text,                      -- color que reporta el CFS ('#B28B33'), null = vacía
+  material_cfs text,
+  actualizado_at timestamptz not null default now(),
+  primary key (impresora_id, ranura)
+);
+
+create table if not exists filamento_bobinas (
+  id text primary key default substr(md5(random()::text), 1, 6),
+  material text not null default 'PLA',
+  color text not null,
+  color_hex text,
+  marca text,
+  peso_g numeric(8,2) not null default 1000 check (peso_g > 0),
+  restante_g numeric(8,2) not null default 1000,
+  usado_total_g numeric(10,2) not null default 0,
+  impresora_id text references filamento_impresoras(id) on delete set null,
+  ranura text check (ranura in ('A','B','C','D')),
+  agotada boolean not null default false,
+  notas text,
+  created_at timestamptz not null default now(),
+  actualizada_at timestamptz not null default now()
+);
+create index if not exists filamento_bobinas_slot on filamento_bobinas (impresora_id, ranura) where not agotada;
+
+create table if not exists filamento_consumos (
+  id bigint generated always as identity primary key,
+  bobina_id text references filamento_bobinas(id) on delete cascade,
+  impresora_id text,
+  ranura text,
+  gramos numeric(8,2) not null,
+  trabajo text,
+  created_at timestamptz not null default now()
+);
+create index if not exists filamento_consumos_bobina on filamento_consumos (bobina_id, created_at desc);
+
+-- Una bobina activa por ranura: al asignar una, la que estaba ahí queda guardada (sin ranura)
+create or replace function filamento_una_por_ranura() returns trigger
+language plpgsql as $$
+begin
+  new.actualizada_at := now();
+  if new.ranura is not null and new.impresora_id is not null and not new.agotada then
+    update filamento_bobinas set impresora_id = null, ranura = null, actualizada_at = now()
+     where impresora_id = new.impresora_id and ranura = new.ranura and id <> new.id and not agotada;
+  end if;
+  if new.agotada then
+    new.impresora_id := null;
+    new.ranura := null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists filamento_una_por_ranura on filamento_bobinas;
+create trigger filamento_una_por_ranura before insert or update on filamento_bobinas
+  for each row execute function filamento_una_por_ranura();
+
+alter table filamento_impresoras enable row level security;
+alter table filamento_ranuras enable row level security;
+alter table filamento_bobinas enable row level security;
+alter table filamento_consumos enable row level security;
+
+drop policy if exists "filamento admin" on filamento_impresoras;
+create policy "filamento admin" on filamento_impresoras for all to authenticated using (is_platform_admin()) with check (is_platform_admin());
+drop policy if exists "filamento admin" on filamento_ranuras;
+create policy "filamento admin" on filamento_ranuras for all to authenticated using (is_platform_admin()) with check (is_platform_admin());
+drop policy if exists "filamento admin" on filamento_bobinas;
+create policy "filamento admin" on filamento_bobinas for all to authenticated using (is_platform_admin()) with check (is_platform_admin());
+drop policy if exists "filamento admin" on filamento_consumos;
+create policy "filamento admin" on filamento_consumos for all to authenticated using (is_platform_admin()) with check (is_platform_admin());
+
+insert into filamento_impresoras (id, nombre, ip) values
+  ('primera', 'Primera', '192.168.0.8'),
+  ('segunda', 'Segunda', '192.168.0.6')
+on conflict (id) do nothing;
+
+-- El bot descuenta el gasto de forma atómica y agrupa el historial por impresión.
+create or replace function filamento_consumir(p_bobina text, p_gramos numeric, p_impresora text, p_ranura text, p_trabajo text)
+returns numeric language plpgsql security definer set search_path = public as $$
+declare v_restante numeric;
+begin
+  update filamento_bobinas
+     set restante_g = restante_g - p_gramos, usado_total_g = usado_total_g + p_gramos
+   where id = p_bobina
+  returning restante_g into v_restante;
+  if not found then return null; end if;
+  update filamento_consumos set gramos = gramos + p_gramos
+   where id = (select id from filamento_consumos
+                where bobina_id = p_bobina and coalesce(trabajo, '') = coalesce(p_trabajo, '')
+                  and impresora_id = p_impresora and created_at > now() - interval '18 hours'
+                order by created_at desc limit 1);
+  if not found then
+    insert into filamento_consumos (bobina_id, impresora_id, ranura, gramos, trabajo)
+    values (p_bobina, p_impresora, p_ranura, p_gramos, p_trabajo);
+  end if;
+  return v_restante;
+end $$;
+revoke all on function filamento_consumir(text, numeric, text, text, text) from public, anon, authenticated;
+grant execute on function filamento_consumir(text, numeric, text, text, text) to service_role;
+
+-- ═════════ 013: acceso del bot de filamento ═════════
+-- Acceso del bot de filamento con la llave pública (anon) de MesaClick:
+-- el bot se registra una sola vez con una clave secreta propia (se guarda solo su hash) y usa
+-- estas funciones, que verifican esa clave. Sin la clave no se puede leer ni escribir nada.
+create table if not exists filamento_bot_clave (
+  id int primary key default 1 check (id = 1),
+  hash text not null,
+  created_at timestamptz not null default now()
+);
+alter table filamento_bot_clave enable row level security;   -- sin políticas: nadie la lee por la API
+
+create or replace function filamento_bot_ok(p_clave text) returns boolean
+language sql stable security definer set search_path = public, extensions as $$
+  select exists (select 1 from filamento_bot_clave where hash = encode(extensions.digest(p_clave, 'sha256'), 'hex'))
+$$;
+
+-- Solo funciona la primera vez (cuando aún no hay clave). Para cambiarla: delete from filamento_bot_clave;
+create or replace function fbot_registrar(p_clave text) returns boolean
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if length(coalesce(p_clave, '')) < 32 then raise exception 'clave muy corta'; end if;
+  if exists (select 1 from filamento_bot_clave) then return filamento_bot_ok(p_clave); end if;
+  insert into filamento_bot_clave (hash) values (encode(extensions.digest(p_clave, 'sha256'), 'hex'));
+  return true;
+end $$;
+
+create or replace function fbot_bobinas(p_clave text, p_solo_activas boolean default true)
+returns setof filamento_bobinas language plpgsql stable security definer set search_path = public as $$
+begin
+  if not filamento_bot_ok(p_clave) then raise exception 'clave del bot inválida'; end if;
+  return query select * from filamento_bobinas where not p_solo_activas or not agotada order by restante_g;
+end $$;
+
+-- Crea (p_id null) o actualiza una bobina con los campos de p_datos.
+create or replace function fbot_guardar(p_clave text, p_id text, p_datos jsonb)
+returns filamento_bobinas language plpgsql security definer set search_path = public as $$
+declare r filamento_bobinas;
+begin
+  if not filamento_bot_ok(p_clave) then raise exception 'clave del bot inválida'; end if;
+  if p_id is null then
+    insert into filamento_bobinas (material, color, color_hex, peso_g, restante_g, impresora_id, ranura)
+    values (coalesce(p_datos->>'material', 'PLA'), coalesce(p_datos->>'color', '?'), p_datos->>'color_hex',
+            coalesce((p_datos->>'peso_g')::numeric, 1000),
+            coalesce((p_datos->>'restante_g')::numeric, (p_datos->>'peso_g')::numeric, 1000),
+            p_datos->>'impresora_id', p_datos->>'ranura')
+    returning * into r;
+  else
+    update filamento_bobinas set
+      impresora_id = case when p_datos ? 'impresora_id' then p_datos->>'impresora_id' else impresora_id end,
+      ranura       = case when p_datos ? 'ranura' then p_datos->>'ranura' else ranura end,
+      restante_g   = case when p_datos ? 'restante_g' then (p_datos->>'restante_g')::numeric else restante_g end,
+      agotada      = case when p_datos ? 'agotada' then (p_datos->>'agotada')::boolean else agotada end,
+      color_hex    = case when p_datos ? 'color_hex' then p_datos->>'color_hex' else color_hex end
+    where id = p_id returning * into r;
+  end if;
+  return r;
+end $$;
+
+create or replace function fbot_impresora(p_clave text, p_id text, p_datos jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not filamento_bot_ok(p_clave) then raise exception 'clave del bot inválida'; end if;
+  update filamento_impresoras set
+    estado = p_datos->>'estado', trabajo = p_datos->>'trabajo',
+    progreso = (p_datos->>'progreso')::numeric, ip = coalesce(p_datos->>'ip', ip), visto_at = now()
+  where id = p_id;
+end $$;
+
+create or replace function fbot_ranuras(p_clave text, p_filas jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not filamento_bot_ok(p_clave) then raise exception 'clave del bot inválida'; end if;
+  insert into filamento_ranuras (impresora_id, ranura, color_hex, material_cfs, actualizado_at)
+  select f->>'impresora_id', f->>'ranura', f->>'color_hex', f->>'material_cfs', now()
+    from jsonb_array_elements(p_filas) f
+  on conflict (impresora_id, ranura) do update
+    set color_hex = excluded.color_hex, material_cfs = excluded.material_cfs, actualizado_at = now();
+end $$;
+
+create or replace function fbot_consumir(p_clave text, p_bobina text, p_gramos numeric, p_impresora text, p_ranura text, p_trabajo text)
+returns numeric language plpgsql security definer set search_path = public as $$
+begin
+  if not filamento_bot_ok(p_clave) then raise exception 'clave del bot inválida'; end if;
+  return filamento_consumir(p_bobina, p_gramos, p_impresora, p_ranura, p_trabajo);
+end $$;
+
+revoke all on function filamento_bot_ok(text) from public, anon, authenticated;
+grant execute on function fbot_registrar(text), fbot_bobinas(text, boolean), fbot_guardar(text, text, jsonb),
+  fbot_impresora(text, text, jsonb), fbot_ranuras(text, jsonb),
+  fbot_consumir(text, text, numeric, text, text, text) to anon, authenticated;
